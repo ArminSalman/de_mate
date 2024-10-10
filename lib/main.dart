@@ -1,3 +1,5 @@
+import 'package:de_mate/sign_in.dart';
+import 'package:de_mate/sign_up.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -24,24 +26,34 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,  // Align buttons to the center
           children: [
             TextButton(
-              onPressed: null,  // You can replace null with an actual callback
-              child: Text('SIGN UP'),
-              style: ButtonStyle(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SignUpPage()),
+                );
+              },  // You can replace null with an const actual callback
+              child: const Text('SIGN UP'),
+              style: const ButtonStyle(
                 foregroundColor: WidgetStatePropertyAll(Colors.white),
                 backgroundColor: WidgetStatePropertyAll(Colors.blue),
-              ),
+  ),
             ),
-            SizedBox(height: 20),  // Add space between the buttons
+            const SizedBox(height: 20),
             TextButton(
-              onPressed: null,  // You can replace null with an actual callback
-              child: Text('SIGN IN'),
-              style: ButtonStyle(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SignInPage()),
+                );
+              },  // You can replace null with an actual callback
+              child: const Text('SIGN IN'),
+              style: const ButtonStyle(
                 foregroundColor: WidgetStatePropertyAll(Colors.white),
                 backgroundColor: WidgetStatePropertyAll(Colors.blue),
               ),
