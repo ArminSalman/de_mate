@@ -16,7 +16,7 @@ class SignUpPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(
-                width: 300,
+                width: 280,
                 child: TextField(
                   decoration: InputDecoration(
                     border: OutlineInputBorder(),
@@ -27,7 +27,7 @@ class SignUpPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const SizedBox(
-                width: 300,
+                width: 280,
                 child: TextField(
                   decoration: InputDecoration(
                       border: OutlineInputBorder(),
@@ -37,7 +37,7 @@ class SignUpPage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const SizedBox(
-                width: 300,
+                width: 280,
                 child: TextField(
                   decoration: InputDecoration(
                       border: OutlineInputBorder(),
