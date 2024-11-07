@@ -26,11 +26,6 @@ class _MainPageState extends State<MainPage> {
         const SnackBar(content: Text("Registration successful")),
       );
       _signIn();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
-
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: ${e.message}")),
@@ -48,16 +43,20 @@ class _MainPageState extends State<MainPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login successful")),
       );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Login successful")),
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
       );
-
     } on FirebaseAuthException catch (e) {
+      print("Error code: ${e.code}, Message: ${e.message}");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: ${e.message}")),
       );
     }
+
   }
 
   // Giriş veya kayıt formunu gösterme fonksiyonu
