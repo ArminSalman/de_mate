@@ -26,7 +26,7 @@ class _MainPageState extends State<MainPage> {
 
   // Kullanıcıyı Firestore'a ekle
   Future<void> _addUserToFirestore(String username, String email) async {
-    await _firestore.collection('users').add({
+    await _firestore.collection('users').doc(username).set({
       'username': username,
       'email': email,
       'createdAt': Timestamp.now(),
