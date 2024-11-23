@@ -16,9 +16,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final FirebaseAuth auth = FirebaseAuth.instance;
 
   Map<String, dynamic>? userData; // Store user data
-  String mail="";
 
-  // Fetch user data based on username (not UID)
+  // Fetch user data based on username (email in this case)
   Future<void> fetchUserData(String email) async {
     final doc = await firestore.collection('users').doc(email).get();
 
@@ -37,8 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = auth.currentUser;
 
     if (user != null) {
-      // Fetch data based on username
-      fetchUserData(user.email ?? ""); // Use displayName as username (or some other identifier)
+      fetchUserData(user.email ?? ""); // Fetch data using email
     }
   }
 
@@ -48,34 +46,126 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             const SizedBox(height: 100),
-            const CircleAvatar(
-              radius: 50,
-            ),
-            const SizedBox(height: 10),
-            // Display username from Firestore or "Loading..." if not available
-            Text(
-              userData?['username'] ??"Loading...", // Show username
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-              ),
-            ),
-            const SizedBox(height: 3),
-            const Text(
-              "Status should be here",
-              style: TextStyle(),
+            // Profile Image with a shadow effect
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.grey.shade300,
+                  child: const Icon(Icons.person, size: 60, color: Colors.white),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6.0),
+                      child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
-            // Other UI elements
+            // Display username
+            Text(
+              userData?['username'] ?? "Loading...", // Show username
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 26,
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Placeholder status
+            const Text(
+              "Status should be here",
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 30),
+            // Profile stats
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatCard("Mates", random.nextInt(1).toString()),
+                _buildStatCard("Sups", random.nextInt(1).toString()),
+                _buildStatCard("Decisions", random.nextInt(1).toString()),
+              ],
+            ),
+            const SizedBox(height: 30),
+            // Buttons for actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.message),
+                  label: const Text("Message"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey.shade800,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.person_add),
+                  label: const Text("Follow"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
+    );
+  }
+
+  // Helper method to build a stat card (e.g., Posts, Followers)
+  Widget _buildStatCard(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 14,
+          ),
+        ),
+      ],
     );
   }
 }
