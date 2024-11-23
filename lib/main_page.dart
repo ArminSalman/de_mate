@@ -24,9 +24,15 @@ class _MainPageState extends State<MainPage> {
     return query.docs.isEmpty;
   }
 
+  // Kullanıcı adı eşsiz mi kontrol et
+  Future<bool> _isEmailUnique(String email) async {
+    final query = await _firestore.collection('users').where('email', isEqualTo: email).get();
+    return query.docs.isEmpty;
+  }
+
   // Kullanıcıyı Firestore'a ekle
   Future<void> _addUserToFirestore(String username, String email) async {
-    await _firestore.collection('users').doc(username).set({
+    await _firestore.collection('users').doc(email).set({
       'username': username,
       'email': email,
       'createdAt': Timestamp.now(),
@@ -37,7 +43,7 @@ class _MainPageState extends State<MainPage> {
   Future<void> _signUp() async {
     try {
       // Kullanıcı adının eşsiz olup olmadığını kontrol et
-      final isUnique = await _isUsernameUnique(_usernameController.text);
+      final isUnique = await _isUsernameUnique(_usernameController.text) && await _isEmailUnique(_usernameController.text);
       if (!isUnique) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Username already exists")),
