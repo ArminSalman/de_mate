@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:de_mate/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -13,15 +15,52 @@ class _MainPageState extends State<MainPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _usernameController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Kullanıcı adı eşsiz mi kontrol et
+  Future<bool> _isUsernameUnique(String username) async {
+    final query = await _firestore.collection('users').where('username', isEqualTo: username).get();
+    return query.docs.isEmpty;
+  }
+
+  // Kullanıcıyı Firestore'a ekle
+  Future<void> _addUserToFirestore(String username, String email) async {
+    try {
+      await _firestore.collection('users').doc(username).set({
+        'username': username,
+        'email': email,
+        'createdAt': Timestamp.now(),
+      });
+      print("User added to Firestore");
+    } catch (e) {
+      print("Error adding user to Firestore: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to add user: $e")),
+      );
+    }
+  }
 
   // Sign Up Function
   Future<void> _signUp() async {
     try {
+      final isUnique = await _isUsernameUnique(_usernameController.text);
+      if (!isUnique) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Username already exists")),
+        );
+        return;
+      }
+
       await _auth.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
+
+      // Kullanıcıyı Firestore'a ekle
+      await _addUserToFirestore(_usernameController.text, _emailController.text);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Registration successful")),
       );
@@ -45,16 +84,12 @@ class _MainPageState extends State<MainPage> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => const HomePage()
-        ),
+        MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } on FirebaseAuthException catch (e) {
-      if(e == FirebaseAuthException){
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: ${e.message}")),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.message}")),
+      );
     }
   }
 
@@ -75,6 +110,15 @@ class _MainPageState extends State<MainPage> {
                     border: OutlineInputBorder(),
                   ),
                 ),
+                const SizedBox(height: 10),
+                if (isSignUp)
+                  TextField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: "Username",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _passwordController,
