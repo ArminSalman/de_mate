@@ -58,7 +58,7 @@ class _MainPageState extends State<MainPage> {
         password: _passwordController.text,
       );
 
-      // Kullanıcıyı Firestore'a ekle
+      // Add users
       await _addUserToFirestore(_usernameController.text, _emailController.text);
 
       ScaffoldMessenger.of(context).showSnackBar(
