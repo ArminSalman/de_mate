@@ -19,16 +19,16 @@ class _MainPageState extends State<MainPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Kullanıcı adı eşsiz mi kontrol et
+  // Check if the username already exist
   Future<bool> _isUsernameUnique(String username) async {
     final query = await _firestore.collection('users').where('username', isEqualTo: username).get();
     return query.docs.isEmpty;
   }
 
-  // Kullanıcıyı Firestore'a ekle
+  // Add user to Firestore
   Future<void> _addUserToFirestore(String username, String email) async {
     try {
-      await _firestore.collection('users').doc(username).set({
+      await _firestore.collection('users').doc("user_info").set({
         'username': username,
         'email': email,
         'createdAt': Timestamp.now(),
