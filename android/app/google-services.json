@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "450319658041",
+    "project_id": "demate-bb96f",
+    "storage_bucket": "demate-bb96f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:450319658041:android:c04299792397e4da56b1e8",
+        "android_client_info": {
+          "package_name": "com.example.de_mate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKeJwtE1nj7V_ASLLbyZbqc8oD876UOe4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
