@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MainPage(), // Set MainPage as the home widget
+      home: const MainPage(), // Set MainPage as the home widget
     );
   }
 }

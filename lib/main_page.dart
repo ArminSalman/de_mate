@@ -15,7 +15,7 @@ class _MainPageState extends State<MainPage> {
   final _confirmPasswordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Kayıt fonksiyonu
+  // Sign Up Function
   Future<void> _signUp() async {
     try {
       await _auth.createUserWithEmailAndPassword(
@@ -33,7 +33,7 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  // Giriş fonksiyonu
+  // Sign In Function
   Future<void> _signIn() async {
     try {
       await _auth.signInWithEmailAndPassword(
@@ -43,23 +43,22 @@ class _MainPageState extends State<MainPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login successful")),
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login successful")),
-      );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(
+          builder: (context) => const HomePage()
+        ),
       );
     } on FirebaseAuthException catch (e) {
-      print("Error code: ${e.code}, Message: ${e.message}");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.message}")),
-      );
+      if(e == FirebaseAuthException){
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.message}")),
+        );
+      }
     }
-
   }
 
-  // Giriş veya kayıt formunu gösterme fonksiyonu
+  // Show Sign In and Sign Up Form Function
   void _showAuthForm({required bool isSignUp}) {
     showDialog(
       context: context,
@@ -109,8 +108,7 @@ class _MainPageState extends State<MainPage> {
             ElevatedButton(
               onPressed: () async {
                 if (isSignUp) {
-                  if (_passwordController.text !=
-                      _confirmPasswordController.text) {
+                  if (_passwordController.text != _confirmPasswordController.text) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Passwords do not match")),
                     );
@@ -118,8 +116,9 @@ class _MainPageState extends State<MainPage> {
                   }
                   await _signUp();
                 } else {
-                  await _signIn();
+                  _signIn();
                 }
+                // Close the dialog after sign-in or sign-up completes
                 Navigator.of(context).pop();
               },
               child: Text(isSignUp ? "Sign Up" : "Sign In"),
@@ -142,7 +141,7 @@ class _MainPageState extends State<MainPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "...kararsız kalana yol göster.",
+                  "...guide those who are undecided.",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
