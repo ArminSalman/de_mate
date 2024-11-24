@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:de_mate/profile_settings_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -45,6 +46,25 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
+      appBar: AppBar(
+        title: const Text('DeMate'),
+        actions: <Widget>[
+
+          IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: 'Go to the profile settings page',
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileSettingsPage()),
+              );
+            },
+          ),
+        ],
+      ),
+
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -59,20 +79,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   radius: 60,
                   backgroundColor: Colors.grey.shade300,
                   child: const Icon(Icons.person, size: 60, color: Colors.white),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.all(6.0),
-                      child: Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                    ),
-                  ),
                 ),
               ],
             ),
