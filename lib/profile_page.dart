@@ -108,7 +108,7 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildStatCard("Mates", random.nextInt(1).toString()),
                 _buildStatCard("Sups", random.nextInt(1).toString()),
-                _buildStatCard("Decisions", random.nextInt(1).toString()),
+                _buildStatCard("Deems", random.nextInt(1).toString()),
               ],
             ),
             const SizedBox(height: 30),

@@ -36,6 +36,9 @@ class _MainPageState extends State<MainPage> {
       'username': username,
       'email': email,
       'createdAt': Timestamp.now(),
+      'mates': Map(),
+      'sups' : Map(),
+      'deems' : Map(),
     });
   }
 
