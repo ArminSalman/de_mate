@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:de_mate/home_page.dart';
+import 'package:de_mate/main_page.dart';
 import 'package:de_mate/profile_settings_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -48,14 +50,29 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
 
       appBar: AppBar(
+        centerTitle: true,
         title: const Text('DeMate'),
+
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          tooltip: "Go to main page",
+          onPressed:(){
+            Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+
+          },
+
+        ),
+
         actions: <Widget>[
 
           IconButton(
             icon: const Icon(Icons.menu),
             tooltip: 'Go to the profile settings page',
             onPressed: () {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfileSettingsPage()),
               );
