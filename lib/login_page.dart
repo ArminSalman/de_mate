@@ -1,11 +1,9 @@
 import 'package:de_mate/home_page.dart';
 import 'package:de_mate/register_page.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
-final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -88,12 +86,12 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
+                        const Text(
                           'Login',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
+                            color: Colors.blue,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -124,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           child: const Text(
                             'Login',
-                            style: TextStyle(fontSize: 16),
+                            style: TextStyle(fontSize: 16,color: Colors.blue),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -135,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
                                 MaterialPageRoute(builder: (context) => const RegisterPage())
                             );
                           },
-                          child: const Text("Don't have an account? Register here"),
+                          child: const Text("Don't have an account? Register here",style: TextStyle(color: Colors.blue),),
                         ),
                       ],
                     ),

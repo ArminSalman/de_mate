@@ -62,22 +62,22 @@ class _RegisterPageState extends State<RegisterPage> {
       'surname': surname,
       'birthdate': _birthdateController.text,
       'createdAt': Timestamp.now(),
-      'mates': Map(),
-      'sups' : Map(),
-      'deems' : Map(),
+      'mates': {},
+      'sups' : {},
+      'deems' : {},
     });
   }
 
   // Check if the username is unique
   Future<bool> _isUsernameUnique(String username) async {
     final query = await _firestore.collection('users').where('username', isEqualTo: username).get();
-    return !query.docs.isEmpty;
+    return query.docs.isNotEmpty;
   }
 
   // Check if the email is unique
   Future<bool> _isEmailUnique(String email) async {
     final query = await _firestore.collection('users').where('email', isEqualTo: email).get();
-    return !query.docs.isEmpty;
+    return query.docs.isNotEmpty;
   }
 
   Future<void> _register() async {
@@ -106,7 +106,7 @@ class _RegisterPageState extends State<RegisterPage> {
           );
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => LoginPage())
+            MaterialPageRoute(builder: (context) => const LoginPage())
           );
         }
 
@@ -152,12 +152,12 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
+                          const Text(
                             'Create Account',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor,
+                              color: Colors.blue,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -209,7 +209,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             child: const Text(
                               'Sign Up',
-                              style: TextStyle(fontSize: 16),
+                              style: TextStyle(fontSize: 16,color: Colors.blue),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -220,7 +220,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   MaterialPageRoute(builder: (context) => const LoginPage())
                               );
                             },
-                            child: const Text("Have an account? Login here"),
+                            child: const Text("Have an account? Login here",style: TextStyle(color: Colors.blue),),
                           ),
                         ],
                       ),
