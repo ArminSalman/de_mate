@@ -16,7 +16,7 @@ class _HomePageState extends State<HomePage> {
 
   //Going Profile Page Function
   Future<void> _goProfile() async {
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => const ProfilePage(),

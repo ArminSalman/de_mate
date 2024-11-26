@@ -72,7 +72,7 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: const Icon(Icons.menu),
             tooltip: 'Go to the profile settings page',
             onPressed: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfileSettingsPage()),
               );
