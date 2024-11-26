@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
           theme: ThemeData.light(), // Light theme
           darkTheme: ThemeData.dark(), // Dark theme
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light, // Conditionally apply dark or light theme
-          home: const HomePage(), // Your home page
+          home: const MainPage(), // Your home page
         );
       },
     );

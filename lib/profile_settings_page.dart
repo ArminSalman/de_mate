@@ -1,7 +1,9 @@
+import 'package:de_mate/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme_provider.dart'; // Import your ThemeProvider class
 import 'profile_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileSettingsPage extends StatefulWidget {
   const ProfileSettingsPage({super.key});
@@ -13,6 +15,57 @@ class ProfileSettingsPage extends StatefulWidget {
 class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController aboutController = TextEditingController();
+
+  void _logout() async {
+    try {
+      // Firebase sign-out
+      await FirebaseAuth.instance.signOut();
+
+      // Navigate to the login page after successful logout
+      Navigator.pushReplacement(
+        context,
+          MaterialPageRoute(builder: (context) => const MainPage())
+      ); // Adjust the route as needed
+    } catch (e) {
+      // Handle sign-out error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error logging out: $e")),
+      );
+    }
+  }
+
+
+  void _confirmLogout() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Logout"),
+          content: const Text("Are you sure you want to log out?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _logout();
+              },
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateProfilePhoto() {
+    // Logic to pick or capture a new profile photo
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Update Profile Photo clicked")),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +93,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             },
             child: const Text(
               "Save",
-              style: TextStyle(color: Colors.black),
+              style: TextStyle(color: Colors.black), // Always black for light mode
             ),
           ),
         ],
@@ -51,9 +104,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             _buildHeader(context),
             const SizedBox(height: 20),
             _buildUserInfoFields(),
-            const SizedBox(height: 20),
-            _buildThemeToggle(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+            _buildThemeToggle(), // Theme toggle without switch
+            const SizedBox(height: 5),
             _buildActionButtons(),
           ],
         ),
@@ -84,29 +137,18 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     );
   }
 
-  // Theme Toggle with Sun and Moon icons closer to the switch
+  // Theme Toggle Widget with Only Sun or Moon Icon
   Widget _buildThemeToggle() {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0), // Control the padding for better alignment
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space the icon and switch evenly
-            children: [
-              Icon(
-                themeProvider.isDarkMode
-                    ? Icons.nightlight_round // Moon icon for dark mode
-                    : Icons.wb_sunny, // Sun icon for light mode
-                color: themeProvider.isDarkMode ? Colors.yellow : Colors.blue,
-                size: 30, // Adjust the size of the icon
-              ),
-              Switch(
-                value: themeProvider.isDarkMode,
-                onChanged: (value) {
-                  themeProvider.toggleTheme(); // Toggle the theme when the switch is changed
-                },
-              ),
-            ],
+        return GestureDetector(
+          onTap: () {
+            themeProvider.toggleTheme(); // Toggle the theme
+          },
+          child: Icon(
+            themeProvider.isDarkMode ? Icons.wb_sunny : Icons.nightlight_round,
+            size: 35,
+            color: themeProvider.isDarkMode ? Colors.yellow : Colors.grey,
           ),
         );
       },
@@ -147,55 +189,20 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             onPressed: _confirmLogout,
             icon: const Icon(
               Icons.logout,
-              color: Colors.white,
+              color: Colors.white, // Icon color set to white
             ),
             label: const Text(
               "Logout",
               style: TextStyle(
-                color: Colors.white,
+                color: Colors.white, // Text color set to white
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
+              backgroundColor: Theme.of(context).primaryColor, // Button background color
             ),
           ),
         ],
       ),
     );
-  }
-
-  void _updateProfilePhoto() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Update Profile Photo clicked")),
-    );
-  }
-
-  void _confirmLogout() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Confirm Logout"),
-          content: const Text("Are you sure you want to log out?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _logout();
-              },
-              child: const Text("Logout"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _logout() {
-    Navigator.pushReplacementNamed(context, '/login');
   }
 }
