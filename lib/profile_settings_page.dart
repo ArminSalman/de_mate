@@ -119,4 +119,3 @@ Widget _buildUserInfoFields() {
   );
 }
 
-Widget
