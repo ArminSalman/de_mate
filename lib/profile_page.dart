@@ -1,7 +1,5 @@
 import 'dart:math';
-
 import 'package:de_mate/home_page.dart';
-import 'package:de_mate/main_page.dart';
 import 'package:de_mate/profile_settings_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +27,9 @@ class _ProfilePageState extends State<ProfilePage> {
         userData = doc.data(); // Update state with fetched data
       });
     } else {
-      print("User not found");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User not found")),
+      );
     }
   }
 
@@ -54,7 +54,7 @@ class _ProfilePageState extends State<ProfilePage> {
         title: const Text('DeMate'),
 
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           tooltip: "Go to main page",
           onPressed:(){
             Navigator.pushReplacement(

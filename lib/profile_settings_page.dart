@@ -45,7 +45,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
   void _updateProfilePhoto() {
     // Logic to pick or capture a new profile photo
-    print("Update Profile Photo clicked");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Update Profile Photo clicked")),
+    );
   }
 
   @override
@@ -72,7 +74,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
             TextButton(
               onPressed: () {
                 // Save functionality
-                print("Profile saved");
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Profile Saved")),
+                );
               },
               child: Text(
                 "Save",
@@ -104,7 +108,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        Container(
+        const SizedBox(
           height: 100,
           width: double.infinity,
         ),
