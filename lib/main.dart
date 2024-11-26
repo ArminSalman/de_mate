@@ -1,15 +1,24 @@
+import 'package:de_mate/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_page.dart'; // Ensure this file exists and has the LoginPage class
 import 'register_page.dart'; // Ensure this file exists and has the RegisterPage class
+import 'profile_settings_page.dart';
+import 'theme_provider.dart';
+import 'package:provider/provider.dart';  // Import provider
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -17,13 +26,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MainPage(),
-      debugShowCheckedModeBanner: false, // Hides the debug banner
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          theme: ThemeData.light(), // Light theme
+          darkTheme: ThemeData.dark(), // Dark theme
+          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light, // Conditionally apply dark or light theme
+          home: const HomePage(), // Your home page
+        );
+      },
     );
   }
 }
