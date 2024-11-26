@@ -9,15 +9,51 @@ class ProfileSettingsPage extends StatefulWidget {
 }
 
 class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
-  // Karanlık mod durumu (Varsayılan olarak aydınlık mod)
   bool isDarkMode = false;
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController aboutController = TextEditingController();
+
+  void _logout() {
+    // Implement logout logic
+    Navigator.pushReplacementNamed(context, '/login'); // Adjust the route as needed
+  }
+
+  void _confirmLogout() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Logout"),
+          content: const Text("Are you sure you want to log out?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _logout();
+              },
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateProfilePhoto() {
+    // Logic to pick or capture a new profile photo
+    print("Update Profile Photo clicked");
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.light(), // Aydınlık tema
-      darkTheme: ThemeData.dark(), // Karanlık tema
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light, // Mod seçimi
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -35,87 +71,120 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
           actions: [
             TextButton(
               onPressed: () {
-                // Kaydetme İşlevi
+                // Save functionality
+                print("Profile saved");
               },
               child: Text(
-                "Kaydet",
+                "Save",
                 style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black, // Renk doğru şekilde atanıyor
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
             ),
-
-
           ],
         ),
         body: SingleChildScrollView(
           child: Column(
             children: [
-              _buildHeader(context), // Profil fotoğrafı güncelleme
+              _buildHeader(context),
               const SizedBox(height: 20),
-              _buildUserInfoFields(), // Kullanıcı bilgilerini güncelleme
+              _buildUserInfoFields(),
               const SizedBox(height: 20),
-              // Karanlık Mod Anahtarı
-              SwitchListTile(
-                title: const Text("Karanlık Mod"),
-                value: isDarkMode,
-                onChanged: (value) {
-                  setState(() {
-                    isDarkMode = value;
-                  });
-                },
-              ),
+              _buildThemeToggle(),
+              const SizedBox(height: 20),
+              _buildActionButtons(),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-// Profil Fotoğrafı
-Widget _buildHeader(BuildContext context) {
-  return Stack(
-    alignment: Alignment.center, // Ortalamak için kullanıyoruz
-    children: [
-      Container(
-        height: 100, // Yükseklik belirliyoruz
-        width: double.infinity, // Genişlik ekran boyunca
-      ),
-      const Positioned(
-        top: 0, // Üstte konumlandırıyoruz
-        child: CircleAvatar(
-          radius: 50, // Boyutunu ayarlıyoruz
-          backgroundImage: NetworkImage(
-              'https://img.a.transfermarkt.technology/portrait/header/306462-1728391751.JPG?lm=1'),
-        ),
-      ),
-    ],
-  );
-}
-
-// Kullanıcı Bilgileri
-Widget _buildUserInfoFields() {
-  return const Padding(
-    padding: EdgeInsets.all(16.0),
-    child: Column(
+  Widget _buildHeader(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        TextField(
-          decoration: InputDecoration(
-            labelText: "Username",
-            border: OutlineInputBorder(),
+        Container(
+          height: 100,
+          width: double.infinity,
+        ),
+        Positioned(
+          top: 0,
+          child: GestureDetector(
+            onTap: _updateProfilePhoto,
+            child: const CircleAvatar(
+              radius: 50,
+              backgroundImage: NetworkImage(
+                '',
+              ),
+              child: Icon(Icons.edit, size: 24, color: Colors.white),
+            ),
           ),
         ),
-        SizedBox(height: 10),
-        TextField(
-          decoration: InputDecoration(
-            labelText: "About",
-            border: OutlineInputBorder(),
-          ),
-        ),
-        SizedBox(height: 10),
       ],
-    ),
-  );
-}
+    );
+  }
 
+  Widget _buildUserInfoFields() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          TextField(
+            controller: usernameController,
+            decoration: const InputDecoration(
+              labelText: "Username",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: aboutController,
+            decoration: const InputDecoration(
+              labelText: "About",
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeToggle() {
+    return SwitchListTile(
+      title: const Text("Dark Mode"),
+      value: isDarkMode,
+      onChanged: (value) {
+        setState(() {
+          isDarkMode = value;
+        });
+      },
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          ElevatedButton.icon(
+            onPressed: _confirmLogout,
+            icon: const Icon(
+              Icons.logout,
+              color: Colors.white, // İkonun rengi beyaz yapıldı
+            ),
+            label: const Text(
+              "Logout",
+              style: TextStyle(
+                color: Colors.white, // Yazı rengi beyaz
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor, // Butonun arkaplan rengi
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
