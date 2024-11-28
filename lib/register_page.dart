@@ -65,6 +65,7 @@ class _RegisterPageState extends State<RegisterPage> {
       'mates': {},
       'sups' : {},
       'deems' : {},
+      'friendRequests' : {},
     });
   }
 

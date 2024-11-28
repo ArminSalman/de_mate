@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:de_mate/home_page.dart';
 import 'package:de_mate/profile_settings_page.dart';
+import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -163,6 +164,77 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
             const SizedBox(height: 40),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 6.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.home,
+                size: 35,
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,),
+              onPressed: () {
+                if (cp.getCurrentPage() != 0) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HomePage(),
+                    ),
+                  );
+                  cp.setCurrentPage(0);
+                }
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.search,
+                size: 35,
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,),
+              onPressed: () {
+                if (cp.getCurrentPage() != 1) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SearchPage(),
+                    ),
+                  );
+                  cp.setCurrentPage(1);
+                }
+                cp.setCurrentPage(1);
+              },
+            ),
+            const SizedBox(width: 40), // Space for floating action button
+            IconButton(
+              icon: Icon(Icons.favorite,
+                  size: 30,
+                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
+              onPressed: () {
+
+                cp.setCurrentPage(2);
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                  Icons.person,
+                  size: 35,
+                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey),
+              onPressed: () {
+                if (cp.getCurrentPage() != 3) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfilePage(),
+                    ),
+                  );
+                  cp.setCurrentPage(3);
+                }
+                cp.setCurrentPage(3);
+              },
+            ),
           ],
         ),
       ),

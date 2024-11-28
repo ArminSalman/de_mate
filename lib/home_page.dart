@@ -1,5 +1,20 @@
 import 'package:de_mate/profile_page.dart';
+import 'package:de_mate/search_page.dart';
 import 'package:flutter/material.dart';
+
+class CurrentPage{
+  int currentPage=0;
+
+  int getCurrentPage(){
+    return currentPage;
+  }
+
+  void setCurrentPage(int i){
+    currentPage = i;
+  }
+}
+
+CurrentPage cp = new CurrentPage();
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -76,7 +91,6 @@ class _HomePageState extends State<HomePage> {
               onPressed: () {
                 // Handle option submission
                 if (selectedOption != null) {
-                  print("Selected: $selectedOption");
                   Navigator.pop(context);
                 }
               },
@@ -143,25 +157,65 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             IconButton(
-              icon: const Icon(Icons.home,size: 35),
-              onPressed: () {},
+              icon: Icon(
+                  Icons.home,
+                  size: 35,
+                  color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,),
+              onPressed: () {
+                if (cp.getCurrentPage() != 0) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HomePage(),
+                    ),
+                  );
+                  cp.setCurrentPage(0);
+                }
+              },
             ),
             IconButton(
-              icon: const Icon(Icons.search,size: 35),
-              onPressed: () {},
+              icon: Icon(Icons.search,
+                  size: 35,
+                  color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,),
+              onPressed: () {
+                if (cp.getCurrentPage() != 1) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SearchPage(),
+                    ),
+                  );
+                  cp.setCurrentPage(1);
+                }
+                cp.setCurrentPage(1);
+              },
             ),
             const SizedBox(width: 40), // Space for floating action button
             IconButton(
-              icon: const Icon(Icons.favorite,size: 30),
-              onPressed: () {},
+              icon: Icon(Icons.favorite,
+                  size: 30,
+                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
+              onPressed: () {
+
+                cp.setCurrentPage(2);
+              },
             ),
             IconButton(
-              icon: const Icon(Icons.person,size: 35),
+              icon: Icon(
+                  Icons.person,
+                  size: 35,
+                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey),
               onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                );
+                if (cp.getCurrentPage() != 3) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfilePage(),
+                    ),
+                  );
+                  cp.setCurrentPage(3);
+                }
+                cp.setCurrentPage(3);
               },
             ),
           ],
