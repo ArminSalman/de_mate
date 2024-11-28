@@ -50,12 +50,19 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-      ),
+      appBar: AppBar(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Display the image
+            Image.asset(
+              'assets/Demate_Logo_PNG.png', // Path to your image
+              height: 350, // Adjust height
+              width: 350, // Adjust width
+              fit: BoxFit.cover, // Adjust the fit if needed
+            ),
+
             // Quotation Section
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -81,7 +88,7 @@ class _MainPageState extends State<MainPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 200),
+            const SizedBox(height: 55),
             // Buttons Section
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -94,11 +101,12 @@ class _MainPageState extends State<MainPage> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 93, vertical: 12),
+                    backgroundColor: Colors.blue,
                   ),
                   child: const Text(
                     "Login",
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16, color: Colors.white),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -110,7 +118,7 @@ class _MainPageState extends State<MainPage> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 84, vertical: 12),
                   ),
                   child: const Text(
                     "Register",

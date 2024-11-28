@@ -12,7 +12,7 @@ class _HomePageState extends State<HomePage> {
   // Sample posts for the home feed
   final List<Map<String, dynamic>> posts = [
     {
-      "name": "Armin Salman",
+      "name": "Armin The Salman",
       "username": "@arminthesalman",
       "details": "This is a detailed description of the post.",
       "profilePicture": null, // Add profile picture asset path if needed
