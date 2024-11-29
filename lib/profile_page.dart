@@ -16,7 +16,6 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
-
   Map<String, dynamic>? userData; // Store user data
 
   // Fetch user data based on username (email in this case)
@@ -207,9 +206,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 cp.setCurrentPage(1);
               },
             ),
-            const SizedBox(width: 40), // Space for floating action button
             IconButton(
-              icon: Icon(Icons.favorite,
+              icon: Icon(Icons.notifications,
                   size: 30,
                   color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
               onPressed: () {

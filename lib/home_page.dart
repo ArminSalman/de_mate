@@ -106,7 +106,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Home Feed"),
+        title: const Text("Decisions"),
       ),
       body: ListView.builder(
         itemCount: posts.length,
@@ -192,7 +192,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(width: 40), // Space for floating action button
             IconButton(
-              icon: Icon(Icons.favorite,
+              icon: Icon(Icons.notifications,
                   size: 30,
                   color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
               onPressed: () {
