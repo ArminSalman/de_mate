@@ -178,15 +178,12 @@ class _HomePageState extends State<HomePage> {
                   size: 35,
                   color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,),
               onPressed: () {
-                if (cp.getCurrentPage() != 1) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchPage(),
-                    ),
-                  );
-                  cp.setCurrentPage(1);
-                }
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SearchPage(),
+                  ),
+                );
                 cp.setCurrentPage(1);
               },
             ),

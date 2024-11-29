@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:de_mate/public_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'profile_page.dart';
@@ -12,9 +13,12 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final TextEditingController _controller = TextEditingController(); // Controller to manage text field
   String query = '';
   List<String> filteredItems = [];
+  List<String> filteredItemsEmail = [];
 
+  // Update search query and perform search
   void updateSearch(String searchQuery) {
     setState(() {
       query = searchQuery;
@@ -23,21 +27,46 @@ class _SearchPageState extends State<SearchPage> {
 
     if (query.isNotEmpty) {
       _searchUsers(query);
+      _searchUsersEmail(query);
     }
   }
 
+  // Perform Firestore search query returns username
   Future<void> _searchUsers(String query) async {
-    // Perform Firestore search query
     final querySnapshot = await _firestore
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: query)
-        .where('username', isLessThanOrEqualTo: query + '\uf8ff') // Range query for usernames
+        .where('username', isLessThanOrEqualTo: '$query\uf8ff') // Range query for usernames
         .get();
 
     setState(() {
       filteredItems = querySnapshot.docs
-          .map((doc) => doc['username'].toString()) // Assuming 'username' is the field you're searching for
+          .map((doc) => doc['username'].toString()) // Use 'email' field instead of 'username'
           .toList();
+    });
+  }
+
+  // Perform Firestore search query returns email
+  Future<void> _searchUsersEmail(String query) async {
+    final querySnapshot = await _firestore
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: query)
+        .where('username', isLessThanOrEqualTo: '$query\uf8ff') // Range query for usernames
+        .get();
+
+    setState(() {
+      filteredItemsEmail = querySnapshot.docs
+          .map((doc) => doc['email'].toString()) // Use 'email' field instead of 'username'
+          .toList();
+    });
+  }
+
+  // Clear the search field
+  void clearSearch() {
+    _controller.clear();
+    setState(() {
+      query = '';
+      filteredItems = [];
     });
   }
 
@@ -52,10 +81,18 @@ class _SearchPageState extends State<SearchPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: TextField(
+                controller: _controller, // Set the controller for the TextField
                 decoration: InputDecoration(
                   hintText: 'Search for users...',
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.search, color: Colors.blue),
+                  suffixIcon: query.isNotEmpty // Display 'X' button when there's text
+                      ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    color: Colors.blue,
+                    onPressed: clearSearch, // Clear search on tap
+                  )
+                      : null, // No 'X' button when input is empty
                   filled: true,
                   fillColor: Colors.blue[50],
                   contentPadding: const EdgeInsets.symmetric(
@@ -94,7 +131,7 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                         title: Text(
-                          filteredItems[index],
+                          filteredItems[index], // Display email in the search results
                           style: const TextStyle(
                             fontSize: 16.0,
                             fontWeight: FontWeight.w500,
@@ -103,7 +140,11 @@ class _SearchPageState extends State<SearchPage> {
                         trailing: const Icon(Icons.arrow_forward_ios,
                             color: Colors.grey),
                         onTap: () {
-                          // Actions when item is tapped
+                          // Navigate to PublicProfilePage with email
+                          Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => PublicProfilePage(userMail: filteredItemsEmail[index]))
+                          );
                         },
                       ),
                     ),
@@ -145,15 +186,12 @@ class _SearchPageState extends State<SearchPage> {
                 color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
               ),
               onPressed: () {
-                if (cp.getCurrentPage() != 1) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchPage(),
-                    ),
-                  );
-                  cp.setCurrentPage(1);
-                }
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SearchPage(),
+                  ),
+                );
                 cp.setCurrentPage(1);
               },
             ),
