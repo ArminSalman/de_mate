@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:de_mate/home_page.dart';
 import 'package:de_mate/profile_settings_page.dart';
 import 'package:de_mate/search_page.dart';
@@ -42,8 +41,6 @@ class _ProfilePageState extends State<ProfilePage> {
       fetchUserData(user.email ?? ""); // Fetch data using email
     }
   }
-
-  static Random random = Random();
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +120,9 @@ class _ProfilePageState extends State<ProfilePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatCard("Mates", random.nextInt(1).toString()),
-                _buildStatCard("Sups", random.nextInt(1).toString()),
-                _buildStatCard("Deems", random.nextInt(1).toString()),
+                _buildStatCard("Mates", userData?["mates"]?.length.toString() ?? "0"),
+                _buildStatCard("Sups", "0"),
+                _buildStatCard("Deems", "0"),
               ],
             ),
             const SizedBox(height: 30),
