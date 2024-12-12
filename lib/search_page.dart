@@ -15,16 +15,16 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
-  final TextEditingController _controller = TextEditingController(); // Controller to manage text field
+  final TextEditingController _controller = TextEditingController();
   String query = '';
   List<String> filteredItems = [];
   List<String> filteredItemsEmail = [];
 
-  // Update search query and perform search
   void updateSearch(String searchQuery) {
     setState(() {
       query = searchQuery;
-      filteredItems = query.isEmpty ? [] : []; // Initial empty list
+      filteredItems = [];
+      filteredItemsEmail = [];
     });
 
     if (query.isNotEmpty) {
@@ -33,72 +33,69 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  // Perform Firestore search query returns username
   Future<void> _searchUsers(String query) async {
     final querySnapshot = await _firestore
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: query)
-        .where('username', isLessThanOrEqualTo: '$query\uf8ff') // Range query for usernames
+        .where('username', isLessThanOrEqualTo: '$query\uf8ff')
         .get();
 
     setState(() {
       filteredItems = querySnapshot.docs
-          .map((doc) => doc['username'].toString()) // Use 'email' field instead of 'username'
+          .map((doc) => doc['username'].toString())
           .toList();
     });
   }
 
-  // Perform Firestore search query returns email
   Future<void> _searchUsersEmail(String query) async {
     final querySnapshot = await _firestore
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: query)
-        .where('username', isLessThanOrEqualTo: '$query\uf8ff') // Range query for usernames
+        .where('username', isLessThanOrEqualTo: '$query\uf8ff')
         .get();
 
     setState(() {
       filteredItemsEmail = querySnapshot.docs
-          .map((doc) => doc['email'].toString()) // Use 'email' field instead of 'username'
+          .map((doc) => doc['email'].toString())
           .toList();
     });
   }
 
-  // Clear the search field
   void clearSearch() {
     _controller.clear();
     setState(() {
       query = '';
       filteredItems = [];
+      filteredItemsEmail = [];
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      backgroundColor: Colors.blue[50],
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const SizedBox(height: 100),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.all(16.0),
               child: TextField(
-                controller: _controller, // Set the controller for the TextField
+                controller: _controller,
                 decoration: InputDecoration(
                   hintText: 'Search for users...',
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.search, color: Colors.blue),
-                  suffixIcon: query.isNotEmpty // Display 'X' button when there's text
+                  suffixIcon: query.isNotEmpty
                       ? IconButton(
                     icon: const Icon(Icons.clear),
                     color: Colors.blue,
-                    onPressed: clearSearch, // Clear search on tap
+                    onPressed: clearSearch,
                   )
-                      : null, // No 'X' button when input is empty
+                      : null,
                   filled: true,
-                  fillColor: Colors.blue[50],
-                  contentPadding: const EdgeInsets.symmetric(
-                      vertical: 10.0, horizontal: 16.0),
+                  fillColor: Colors.white,
+                  contentPadding:
+                  const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30.0),
                     borderSide: BorderSide.none,
@@ -110,7 +107,19 @@ class _SearchPageState extends State<SearchPage> {
             ),
             Expanded(
               child: query.isEmpty
-                  ? const SizedBox.shrink() // Nothing will show when blank
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.search, size: 100, color: Colors.blue),
+                    SizedBox(height: 10),
+                    Text(
+                      'Search for users to connect!',
+                      style: TextStyle(color: Colors.blue, fontSize: 18),
+                    ),
+                  ],
+                ),
+              )
                   : ListView.builder(
                 itemCount: filteredItems.length,
                 itemBuilder: (context, index) {
@@ -119,42 +128,43 @@ class _SearchPageState extends State<SearchPage> {
                         horizontal: 16.0, vertical: 8.0),
                     child: Card(
                       color: Colors.white,
-                      elevation: 3.0,
+                      elevation: 5.0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
+                        borderRadius: BorderRadius.circular(15.0),
                       ),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.blue[100],
                           child: Text(
                             filteredItems[index][0].toUpperCase(),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                         title: Text(
-                          filteredItems[index], // Display email in the search results
+                          filteredItems[index],
                           style: const TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios,
                             color: Colors.grey),
                         onTap: () {
-                          // Navigate to PublicProfilePage with email
-
-                          //There should be a filter to check if the user search for him/his self.
-                          if(auth.currentUser?.email.toString() == filteredItemsEmail[index].toString()){
-                            cp.setCurrentPage(3);
+                          if (auth.currentUser?.email.toString() ==
+                              filteredItemsEmail[index].toString()) {
                             Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const ProfilePage())
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const ProfilePage()),
                             );
-                          }else {
+                          } else {
                             Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => PublicProfilePage(userMail: filteredItemsEmail[index]))
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PublicProfilePage(
+                                  userMail: filteredItemsEmail[index],
+                                ),
+                              ),
                             );
                           }
                         },
@@ -176,7 +186,7 @@ class _SearchPageState extends State<SearchPage> {
             IconButton(
               icon: Icon(
                 Icons.home,
-                size: 35,
+                size: 30,
                 color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,
               ),
               onPressed: () {
@@ -194,7 +204,7 @@ class _SearchPageState extends State<SearchPage> {
             IconButton(
               icon: Icon(
                 Icons.search,
-                size: 35,
+                size: 30,
                 color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
               ),
               onPressed: () {
@@ -208,18 +218,21 @@ class _SearchPageState extends State<SearchPage> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.notifications,
-                  size: 30,
-                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
+              icon: Icon(
+                Icons.notifications,
+                size: 30,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
                 cp.setCurrentPage(2);
               },
             ),
             IconButton(
               icon: Icon(
-                  Icons.person,
-                  size: 35,
-                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey),
+                Icons.person,
+                size: 30,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
                 if (cp.getCurrentPage() != 3) {
                   Navigator.pushReplacement(
@@ -230,7 +243,6 @@ class _SearchPageState extends State<SearchPage> {
                   );
                   cp.setCurrentPage(3);
                 }
-                cp.setCurrentPage(3);
               },
             ),
           ],

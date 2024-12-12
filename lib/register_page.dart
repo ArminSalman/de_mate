@@ -62,7 +62,7 @@ class _RegisterPageState extends State<RegisterPage> {
       'surname': surname,
       'birthdate': _birthdateController.text,
       'createdAt': Timestamp.now(),
-      'mates': {},
+      'mates': [],
       'sups' : {},
       'deems' : {},
       'friendRequests' : {},

@@ -21,54 +21,58 @@ UserRepository userControl = UserRepository();
 class _PublicProfilePageState extends State<PublicProfilePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
-  Map<String, dynamic>? userData; // Store user data
-  String buttonLabel = ""; // Dynamic button label
-  bool isMate = false; // Check if already mates
+  Map<String, dynamic>? userData;
+  String buttonLabel = "Loading...";
+  bool isMate = false;
 
   Future<void> fetchUserData(String userMail) async {
-    final doc = await firestore.collection('users').doc(userMail).get();
+    try {
+      final doc = await firestore.collection('users').doc(userMail).get();
 
-    if (doc.exists) {
-      setState(() {
-        userData = doc.data(); // Update state with fetched data
-      });
-      determineButtonLabel();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("User not found")),
-      );
+      if (doc.exists) {
+        setState(() {
+          userData = doc.data();
+        });
+        await determineButtonLabel();
+      } else {
+        showError("User not found");
+      }
+    } catch (e) {
+      showError("Failed to fetch user data: $e");
     }
   }
 
   Future<void> determineButtonLabel() async {
-    final currentUserEmail = auth.currentUser!.email;
-    final currentUserDoc = await firestore.collection('users').doc(currentUserEmail).get();
+    try {
+      final currentUserEmail = auth.currentUser!.email;
+      final currentUserDoc = await firestore.collection('users').doc(currentUserEmail).get();
 
-    if (currentUserDoc.exists) {
-      Map<String, dynamic>? currentUserData = currentUserDoc.data() as Map<String, dynamic>?;
-      List<String> mates = List<String>.from(currentUserData?["mates"] ?? []);
-      Map<String, dynamic> receivedRequests = Map<String, dynamic>.from(currentUserData?["friendRequests"] ?? {});
-      Map<String, dynamic> sentRequests = Map<String, dynamic>.from(userData?["friendRequests"] ?? {});
+      if (currentUserDoc.exists) {
+        Map<String, dynamic>? currentUserData = currentUserDoc.data();
+        List<String> mates = List<String>.from(currentUserData?["mates"] ?? []);
+        Map<String, dynamic> receivedRequests = Map<String, dynamic>.from(currentUserData?["friendRequests"] ?? {});
+        Map<String, dynamic> sentRequests = Map<String, dynamic>.from(userData?["friendRequests"] ?? {});
 
-      if (mates.contains(widget.userMail)) {
         setState(() {
-          buttonLabel = "Mate";
-          isMate = true;
-        });
-      } else if (receivedRequests.containsKey(widget.userMail)) {
-        setState(() {
-          buttonLabel = "Accept Request";
-        });
-      } else if (sentRequests.containsKey(currentUserEmail)) {
-        setState(() {
-          buttonLabel = "Request Sent";
-        });
-      } else {
-        setState(() {
-          buttonLabel = "Send Request";
+          if (mates.contains(widget.userMail)) {
+            buttonLabel = "Mate";
+            isMate = true;
+          } else if (receivedRequests.containsKey(widget.userMail)) {
+            buttonLabel = "Accept Request";
+          } else if (sentRequests.containsKey(currentUserEmail)) {
+            buttonLabel = "Request Sent";
+          } else {
+            buttonLabel = "Send Request";
+          }
         });
       }
+    } catch (e) {
+      showError("Error determining button label: $e");
     }
+  }
+
+  void showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -158,7 +162,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                       : () async {
                     if (buttonLabel == "Send Request") {
                       await userControl.addFriendRequest(widget.userMail, auth.currentUser!.email!);
-                    } else if (buttonLabel == "Accept") {
+                    } else if (buttonLabel == "Accept Request") {
                       await userControl.acceptFriendRequest(widget.userMail, auth.currentUser!.email!, firestore);
                     }
                     await determineButtonLabel();
