@@ -150,26 +150,34 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                         Map<String, dynamic>? friendRequests = friendData?['friendRequests'] as Map<String, dynamic>?;
 
                         if (friendRequests != null) {
-                          if (friendRequests.containsKey(auth.currentUser!.email.toString())) {
+                          if (friendRequests.containsKey(email)) {
                             // Accept the friend request if it exists
                             isAccepted = true;
                             await userControl.acceptFriendRequest(email, auth.currentUser!.email.toString());
                             print("Friend request accepted.");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Friend request accepted.")),
+                            );
                           }
                         }
 
-                        if (isAccepted == false) {
+                        if (!isAccepted) {
                           // Add a friend request if none exists
                           await userControl.addFriendRequest(email, auth.currentUser!.email.toString());
                           print("Friend request sent.");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Friend request sent.")),
+                          );
                         }
                       } else {
                         print('No user found with email: ${auth.currentUser!.email.toString()}');
                       }
                     } catch (e) {
                       print('Error: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
                     }
-
                   },
                   icon: const Icon(Icons.person_add),
                   label: const Text("Follow"),
