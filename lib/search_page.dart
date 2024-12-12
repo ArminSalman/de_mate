@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:de_mate/public_profile_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'profile_page.dart';
@@ -13,6 +14,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
   final TextEditingController _controller = TextEditingController(); // Controller to manage text field
   String query = '';
   List<String> filteredItems = [];
@@ -141,10 +143,20 @@ class _SearchPageState extends State<SearchPage> {
                             color: Colors.grey),
                         onTap: () {
                           // Navigate to PublicProfilePage with email
-                          Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => PublicProfilePage(userMail: filteredItemsEmail[index]))
-                          );
+
+                          //There should be a filter to check if the user search for him/his self.
+                          if(auth.currentUser?.email.toString() == filteredItemsEmail[index].toString()){
+                            cp.setCurrentPage(3);
+                            Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => const ProfilePage())
+                            );
+                          }else {
+                            Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => PublicProfilePage(userMail: filteredItemsEmail[index]))
+                            );
+                          }
                         },
                       ),
                     ),

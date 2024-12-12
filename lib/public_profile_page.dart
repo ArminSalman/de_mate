@@ -6,6 +6,7 @@ import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user.dart';
 
 class PublicProfilePage extends StatefulWidget {
   const PublicProfilePage({super.key, required this.userMail});
@@ -15,6 +16,8 @@ class PublicProfilePage extends StatefulWidget {
   @override
   State<PublicProfilePage> createState() => _PublicProfilePageState();
 }
+
+UserRepository userControl = new UserRepository();
 
 class _PublicProfilePageState extends State<PublicProfilePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -133,7 +136,41 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () async {
+                    String email = widget.userMail; // The email of the friend
+                    bool isAccepted = false;
+
+                    try {
+                      // Get the current user's document
+                      DocumentSnapshot? userDoc = await userControl.getUserByEmail(auth.currentUser!.email.toString());
+
+                      if (userDoc != null && userDoc.exists) {
+                        // Extract the friendRequests field
+                        Map<String, dynamic>? friendData = userDoc.data() as Map<String, dynamic>?;
+                        Map<String, dynamic>? friendRequests = friendData?['friendRequests'] as Map<String, dynamic>?;
+
+                        if (friendRequests != null) {
+                          if (friendRequests.containsKey(auth.currentUser!.email.toString())) {
+                            // Accept the friend request if it exists
+                            isAccepted = true;
+                            await userControl.acceptFriendRequest(email, auth.currentUser!.email.toString());
+                            print("Friend request accepted.");
+                          }
+                        }
+
+                        if (isAccepted == false) {
+                          // Add a friend request if none exists
+                          await userControl.addFriendRequest(email, auth.currentUser!.email.toString());
+                          print("Friend request sent.");
+                        }
+                      } else {
+                        print('No user found with email: ${auth.currentUser!.email.toString()}');
+                      }
+                    } catch (e) {
+                      print('Error: $e');
+                    }
+
+                  },
                   icon: const Icon(Icons.person_add),
                   label: const Text("Follow"),
                   style: ElevatedButton.styleFrom(

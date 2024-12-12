@@ -7,6 +7,7 @@ import 'register_page.dart'; // Ensure this file exists and has the RegisterPage
 import 'profile_settings_page.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';  // Import provider
+import 'user.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
