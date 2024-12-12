@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:de_mate/home_page.dart';
 import 'package:de_mate/profile_page.dart';
 import 'package:de_mate/profile_settings_page.dart';
@@ -17,14 +16,15 @@ class PublicProfilePage extends StatefulWidget {
   State<PublicProfilePage> createState() => _PublicProfilePageState();
 }
 
-UserRepository userControl = new UserRepository();
+UserRepository userControl = UserRepository();
 
 class _PublicProfilePageState extends State<PublicProfilePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
   Map<String, dynamic>? userData; // Store user data
+  String buttonLabel = ""; // Dynamic button label
+  bool isMate = false; // Check if already mates
 
-  // Fetch user data based on username
   Future<void> fetchUserData(String userMail) async {
     final doc = await firestore.collection('users').doc(userMail).get();
 
@@ -32,10 +32,42 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       setState(() {
         userData = doc.data(); // Update state with fetched data
       });
+      determineButtonLabel();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("User not found")),
       );
+    }
+  }
+
+  Future<void> determineButtonLabel() async {
+    final currentUserEmail = auth.currentUser!.email;
+    final currentUserDoc = await firestore.collection('users').doc(currentUserEmail).get();
+
+    if (currentUserDoc.exists) {
+      Map<String, dynamic>? currentUserData = currentUserDoc.data() as Map<String, dynamic>?;
+      List<String> mates = List<String>.from(currentUserData?["mates"] ?? []);
+      Map<String, dynamic> receivedRequests = Map<String, dynamic>.from(currentUserData?["friendRequests"] ?? {});
+      Map<String, dynamic> sentRequests = Map<String, dynamic>.from(userData?["friendRequests"] ?? {});
+
+      if (mates.contains(widget.userMail)) {
+        setState(() {
+          buttonLabel = "Mate";
+          isMate = true;
+        });
+      } else if (receivedRequests.containsKey(widget.userMail)) {
+        setState(() {
+          buttonLabel = "Accept Request";
+        });
+      } else if (sentRequests.containsKey(currentUserEmail)) {
+        setState(() {
+          buttonLabel = "Request Sent";
+        });
+      } else {
+        setState(() {
+          buttonLabel = "Send Request";
+        });
+      }
     }
   }
 
@@ -45,31 +77,23 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     fetchUserData(widget.userMail);
   }
 
-  static Random random = Random();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         centerTitle: true,
         title: const Text('DeMate'),
-
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           tooltip: "Go to search page",
-          onPressed:(){
+          onPressed: () {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const SearchPage()),
             );
-
           },
-
         ),
-
         actions: <Widget>[
-
           IconButton(
             icon: const Icon(Icons.menu),
             tooltip: 'Go to the profile settings page',
@@ -82,8 +106,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           ),
         ],
       ),
-
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -91,7 +113,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             const SizedBox(height: 100),
-            // Profile Image with a shadow effect
             Stack(
               children: [
                 CircleAvatar(
@@ -102,16 +123,14 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               ],
             ),
             const SizedBox(height: 20),
-            // Display username
             Text(
-              userData?['username'] ?? "Loading...", // Show username
+              userData?['username'] ?? "Loading...",
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 26,
               ),
             ),
             const SizedBox(height: 10),
-            // Placeholder status
             const Text(
               "Status should be here",
               style: TextStyle(
@@ -121,68 +140,33 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               ),
             ),
             const SizedBox(height: 30),
-            // Profile stats
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatCard("Mates", random.nextInt(1).toString()),
-                _buildStatCard("Sups", random.nextInt(1).toString()),
-                _buildStatCard("Deems", random.nextInt(1).toString()),
+                _buildStatCard("Mates", userData?["mates"]?.length.toString() ?? "0"),
+                _buildStatCard("Sups", "0"),
+                _buildStatCard("Deems", "0"),
               ],
             ),
             const SizedBox(height: 30),
-            // Buttons for actions
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () async {
-                    String email = widget.userMail; // The email of the friend
-                    bool isAccepted = false;
-
-                    try {
-                      // Get the current user's document
-                      DocumentSnapshot? userDoc = await userControl.getUserByEmail(auth.currentUser!.email.toString());
-
-                      if (userDoc != null && userDoc.exists) {
-                        // Extract the friendRequests field
-                        Map<String, dynamic>? friendData = userDoc.data() as Map<String, dynamic>?;
-                        Map<String, dynamic>? friendRequests = friendData?['friendRequests'] as Map<String, dynamic>?;
-
-                        if (friendRequests != null) {
-                          if (friendRequests.containsKey(email)) {
-                            // Accept the friend request if it exists
-                            isAccepted = true;
-                            await userControl.acceptFriendRequest(email, auth.currentUser!.email.toString());
-                            print("Friend request accepted.");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Friend request accepted.")),
-                            );
-                          }
-                        }
-
-                        if (!isAccepted) {
-                          // Add a friend request if none exists
-                          await userControl.addFriendRequest(email, auth.currentUser!.email.toString());
-                          print("Friend request sent.");
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Friend request sent.")),
-                          );
-                        }
-                      } else {
-                        print('No user found with email: ${auth.currentUser!.email.toString()}');
-                      }
-                    } catch (e) {
-                      print('Error: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
+                  onPressed: isMate
+                      ? null
+                      : () async {
+                    if (buttonLabel == "Send Request") {
+                      await userControl.addFriendRequest(widget.userMail, auth.currentUser!.email!);
+                    } else if (buttonLabel == "Accept") {
+                      await userControl.acceptFriendRequest(widget.userMail, auth.currentUser!.email!, firestore);
                     }
+                    await determineButtonLabel();
                   },
                   icon: const Icon(Icons.person_add),
-                  label: const Text("Follow"),
+                  label: Text(buttonLabel),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[900],
+                    backgroundColor: isMate ? Colors.grey : Colors.blue[900],
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
@@ -206,7 +190,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               icon: Icon(
                 Icons.home,
                 size: 35,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,),
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
                 if (cp.getCurrentPage() != 0) {
                   Navigator.pushReplacement(
@@ -220,9 +205,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.search,
+              icon: Icon(
+                Icons.search,
                 size: 35,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,),
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
@@ -234,19 +221,21 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.notifications,
-                  size: 30,
-                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
+              icon: Icon(
+                Icons.notifications,
+                size: 30,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
-
                 cp.setCurrentPage(2);
               },
             ),
             IconButton(
               icon: Icon(
-                  Icons.person,
-                  size: 35,
-                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey),
+                Icons.person,
+                size: 35,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
                 if (cp.getCurrentPage() != 3) {
                   Navigator.pushReplacement(
@@ -266,7 +255,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     );
   }
 
-  // Helper method to build a stat card (e.g., Posts, Followers)
   Widget _buildStatCard(String label, String value) {
     return Column(
       children: [

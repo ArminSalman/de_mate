@@ -67,12 +67,56 @@ class UserRepository {
   }
 
   // Add a new friend request
-  Future<void> addFriendRequest(String email, String requesterEmail) async {
+  Future<void> addFriendRequest(String receiverEmail, String senderEmail) async {
     try {
-      await _usersCollection.doc(email).update({
-        'friendRequests.$requesterEmail': true,
-      });
-      print("Friend request added successfully.");
+      DocumentSnapshot receiverDoc = await _usersCollection.doc(receiverEmail).get();
+      DocumentSnapshot senderDoc = await _usersCollection.doc(senderEmail).get();
+
+      Map<String, dynamic> receiverData =
+          receiverDoc.data() as Map<String, dynamic>? ?? {};
+      Map<String, dynamic> senderData =
+          senderDoc.data() as Map<String, dynamic>? ?? {};
+
+      Map<String, dynamic> receiverRequests =
+      Map<String, dynamic>.from(receiverData['friendRequests'] ?? {});
+      Map<String, dynamic> senderRequests =
+      Map<String, dynamic>.from(senderData['friendRequests'] ?? {});
+
+      // Check if receiver already requested the sender
+      if (receiverRequests.containsKey(senderEmail)) {
+        // Mutual request found, convert to mates
+        List<String> receiverMates = List<String>.from(receiverData['mates'] ?? []);
+        List<String> senderMates = List<String>.from(senderData['mates'] ?? []);
+
+        if (!receiverMates.contains(senderEmail)) receiverMates.add(senderEmail);
+        if (!senderMates.contains(receiverEmail)) senderMates.add(receiverEmail);
+
+        // Remove the friend requests
+        receiverRequests.remove(senderEmail);
+        senderRequests.remove(receiverEmail);
+
+        // Update both users in Firestore
+        await _usersCollection.doc(receiverEmail).update({
+          'friendRequests': receiverRequests,
+          'mates': receiverMates,
+        });
+
+        await _usersCollection.doc(senderEmail).update({
+          'friendRequests': senderRequests,
+          'mates': senderMates,
+        });
+
+        print("Mutual friend request converted to mates.");
+      } else {
+        // Add the friend request normally
+        receiverRequests[senderEmail] = true;
+
+        await _usersCollection.doc(receiverEmail).update({
+          'friendRequests': receiverRequests,
+        });
+
+        print("Friend request added successfully.");
+      }
     } catch (e) {
       print("Error adding friend request: $e");
     }
@@ -80,13 +124,48 @@ class UserRepository {
 
   // Accept a friend request
   Future<void> acceptFriendRequest(
-      String email, String friendEmail) async {
+      String senderEmail, String receiverEmail, FirebaseFirestore firestore) async {
+    final senderRef = firestore.collection('users').doc(senderEmail);
+    final receiverRef = firestore.collection('users').doc(receiverEmail);
+
     try {
-      await _usersCollection.doc(email).update({
-        'friendRequests.$friendEmail': FieldValue.delete(),
-        'mates.$friendEmail': true,
-      });
-      print("Friend request accepted successfully.");
+      DocumentSnapshot senderSnapshot = await senderRef.get();
+      DocumentSnapshot receiverSnapshot = await receiverRef.get();
+
+      if (senderSnapshot.exists && receiverSnapshot.exists) {
+        Map<String, dynamic> senderData =
+        senderSnapshot.data() as Map<String, dynamic>;
+        Map<String, dynamic> receiverData =
+        receiverSnapshot.data() as Map<String, dynamic>;
+
+        // Remove friend request
+        Map<String, dynamic> senderRequests =
+        Map<String, dynamic>.from(senderData['friendRequests'] ?? {});
+        Map<String, dynamic> receiverRequests =
+        Map<String, dynamic>.from(receiverData['friendRequests'] ?? {});
+
+        senderRequests.remove(receiverEmail);
+        receiverRequests.remove(senderEmail);
+
+        // Add to mates
+        List<String> senderMates = List<String>.from(senderData['mates'] ?? []);
+        List<String> receiverMates = List<String>.from(receiverData['mates'] ?? []);
+
+        if (!senderMates.contains(receiverEmail)) senderMates.add(receiverEmail);
+        if (!receiverMates.contains(senderEmail)) receiverMates.add(senderEmail);
+
+        // Update Firestore
+        await senderRef.update({
+          'friendRequests': senderRequests,
+          'mates': senderMates
+        });
+        await receiverRef.update({
+          'friendRequests': receiverRequests,
+          'mates': receiverMates
+        });
+
+        print("Friend request accepted and mates updated.");
+      }
     } catch (e) {
       print("Error accepting friend request: $e");
     }
@@ -95,9 +174,14 @@ class UserRepository {
   // Remove a friend
   Future<void> removeFriend(String email, String friendEmail) async {
     try {
-      await _usersCollection.doc(email).update({
-        'mates.$friendEmail': FieldValue.delete(),
-      });
+      DocumentSnapshot userDoc = await _usersCollection.doc(email).get();
+      Map<String, dynamic> userData =
+          userDoc.data() as Map<String, dynamic>? ?? {};
+
+      List<String> mates = List<String>.from(userData['mates'] ?? []);
+      mates.remove(friendEmail);
+
+      await _usersCollection.doc(email).update({'mates': mates});
       print("Friend removed successfully.");
     } catch (e) {
       print("Error removing friend: $e");
@@ -116,3 +200,7 @@ class UserRepository {
     }
   }
 }
+
+// Update PublicProfilePage.dart
+// When sending a friend request, update button label to "Request Sent"
+// Use the determineButtonLabel method to re-check and set appropriate label.
