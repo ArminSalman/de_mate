@@ -1,20 +1,21 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:de_mate/profile_page.dart';
 import 'package:de_mate/search_page.dart';
 import 'package:flutter/material.dart';
 
-class CurrentPage{
-  int currentPage=0;
+class CurrentPage {
+  int currentPage = 0;
 
-  int getCurrentPage(){
+  int getCurrentPage() {
     return currentPage;
   }
 
-  void setCurrentPage(int i){
+  void setCurrentPage(int i) {
     currentPage = i;
   }
 }
 
-CurrentPage cp = new CurrentPage();
+CurrentPage cp = CurrentPage();
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,80 +25,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Sample posts for the home feed
-  final List<Map<String, dynamic>> posts = [
-    {
-      "name": "Armin The Salman",
-      "username": "@arminthesalman",
-      "details": "This is a detailed description of the post.",
-      "profilePicture": null, // Add profile picture asset path if needed
-      "isExpanded": false
-    },
-    {
-      "name": "Hacı Sağır",
-      "username": "@haci_sagir",
-      "details": "Another detailed post content goes here.",
-      "profilePicture": null,
-      "isExpanded": false
-    },
-    {
-      "name": "Enes Belkaya",
-      "username": "@enesbelkaya",
-      "details": "Yet another detailed post for demonstration.",
-      "profilePicture": null,
-      "isExpanded": false
-    },
-  ];
-
-  // Function to toggle the expansion of a post
-  void toggleExpand(int index) {
-    setState(() {
-      posts[index]["isExpanded"] = !posts[index]["isExpanded"];
-    });
-  }
-
-  // Function to show the pop-up when "sup" is clicked
-  void showSupPopup(BuildContext context, int index) {
-    List<String> options = ["Option 1", "Option 2", "Option 3"]; // Example options
-    String? selectedOption;
-
+  void _showPostDialog() {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Respond to ${posts[index]["name"]}"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (String option in options)
-                RadioListTile<String>(
-                  title: Text(option),
-                  value: option,
-                  groupValue: selectedOption,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedOption = value;
-                    });
-                  },
-                ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Handle option submission
-                if (selectedOption != null) {
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text("Submit"),
-            ),
-          ],
-        );
+      builder: (BuildContext context) {
+        return PostDialog();
       },
     );
   }
@@ -108,48 +40,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text("Decisions"),
       ),
-      body: ListView.builder(
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: posts[index]["profilePicture"] == null
-                        ? null
-                        : AssetImage(posts[index]["profilePicture"]),
-                    child: posts[index]["profilePicture"] == null
-                        ? const Icon(Icons.person)
-                        : null,
-                  ),
-                  title: Text(posts[index]["name"]),
-                  subtitle: Text(posts[index]["username"]),
-                  trailing: IconButton(
-                    icon: Icon(posts[index]["isExpanded"]
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down),
-                    onPressed: () => toggleExpand(index),
-                  ),
-                ),
-                if (posts[index]["isExpanded"])
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(posts[index]["details"]),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: ElevatedButton(
-                    onPressed: () => showSupPopup(context, index),
-                    child: const Text("sup"),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+      body: DecisionList(),
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 6.0,
@@ -158,9 +49,10 @@ class _HomePageState extends State<HomePage> {
           children: [
             IconButton(
               icon: Icon(
-                  Icons.home,
-                  size: 35,
-                  color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,),
+                Icons.home,
+                size: 35,
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
                 if (cp.getCurrentPage() != 0) {
                   Navigator.pushReplacement(
@@ -174,9 +66,11 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.search,
-                  size: 35,
-                  color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,),
+              icon: Icon(
+                Icons.search,
+                size: 35,
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
@@ -187,31 +81,30 @@ class _HomePageState extends State<HomePage> {
                 cp.setCurrentPage(1);
               },
             ),
-            const SizedBox(width: 40), // Space for floating action button
+            const SizedBox(width: 40), // Space for the FAB
             IconButton(
-              icon: Icon(Icons.notifications,
-                  size: 30,
-                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
+              icon: Icon(
+                Icons.notifications,
+                size: 30,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
-
                 cp.setCurrentPage(2);
               },
             ),
             IconButton(
               icon: Icon(
-                  Icons.person,
-                  size: 35,
-                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey),
+                Icons.person,
+                size: 35,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey,
+              ),
               onPressed: () {
-                if (cp.getCurrentPage() != 3) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ProfilePage(),
-                    ),
-                  );
-                  cp.setCurrentPage(3);
-                }
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfilePage(),
+                  ),
+                );
                 cp.setCurrentPage(3);
               },
             ),
@@ -219,12 +112,158 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add new post functionality
-        },
-        child: const Icon(Icons.add,),
+        onPressed: _showPostDialog,
+        child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+}
+
+class PostDialog extends StatefulWidget {
+  @override
+  _PostDialogState createState() => _PostDialogState();
+}
+
+class _PostDialogState extends State<PostDialog> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _authorController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final List<TextEditingController> _optionControllers = [
+    TextEditingController(),
+    TextEditingController()
+  ];
+
+  void _addOption() {
+    setState(() {
+      _optionControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeOption(int index) {
+    setState(() {
+      _optionControllers.removeAt(index);
+    });
+  }
+
+  void _postDecision() async {
+    if (_titleController.text.isEmpty ||
+        _descriptionController.text.isEmpty ||
+        _optionControllers.any((controller) => controller.text.isEmpty)) return;
+
+    Map<String, dynamic> options = {};
+    for (int i = 0; i < _optionControllers.length; i++) {
+      options['option${i + 1}'] = {'choosen': 0};
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('decisions').add({
+        'author': _authorController.text, // Extract the text value from the controller
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+        'location': 'Unknown', // Replace with real location if available
+        'options': options,
+        'published_date': FieldValue.serverTimestamp(),
+      });
+
+      Navigator.pop(context); // Close the dialog upon successful posting
+    } catch (e) {
+      // Log or handle the error
+      print("Failed to post decision: $e");
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Create a New Decision"),
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            ..._optionControllers.asMap().entries.map((entry) {
+              int index = entry.key;
+              TextEditingController controller = entry.value;
+              return Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle),
+                    onPressed: _optionControllers.length > 2
+                        ? () => _removeOption(index)
+                        : null,
+                  ),
+                ],
+              );
+            }),
+            TextButton.icon(
+              onPressed: _addOption,
+              icon: const Icon(Icons.add),
+              label: const Text("Add Option"),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: _postDecision,
+          child: const Text("Post"),
+        ),
+      ],
+    );
+  }
+}
+
+class DecisionList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('decisions').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const CircularProgressIndicator();
+
+        final decisions = snapshot.data!.docs;
+
+        return ListView.builder(
+          itemCount: decisions.length,
+          itemBuilder: (context, index) {
+            var decision = decisions[index];
+            return Card(
+              margin: const EdgeInsets.all(8.0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+              child: ListTile(
+                title: Text(
+                  decision['title'],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(decision['description']),
+                onTap: () {
+                  // Implement dialog for voting as before
+                },
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
