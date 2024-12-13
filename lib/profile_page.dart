@@ -4,6 +4,7 @@ import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'display_mates_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -49,19 +50,6 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         centerTitle: true,
         title: const Text('DeMate'),
-
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: "Go to main page",
-          onPressed:(){
-            Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
-
-          },
-
-        ),
 
         actions: <Widget>[
 
@@ -200,25 +188,39 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // Helper method to build a stat card (e.g., Posts, Followers)
+  // Helper method to build a stat card (e.g., Mates, Sups, Deems)
   Widget _buildStatCard(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
+    return GestureDetector(
+      onTap: () {
+        if (label == "Mates") {
+          // Navigate to the MatesPage when "Mates" is tapped
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DisplayMatesPage(), // Replace MatesPage with your actual mates list widget
+            ),
+          );
+        }
+      },
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

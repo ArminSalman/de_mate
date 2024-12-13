@@ -53,9 +53,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         List<String> receivedFriendRequests = List<String>.from(currentUserData?["receivedFriendRequests"] ?? []);
         List<String> sentFriendRequests = List<String>.from(currentUserData?["sentFriendRequests"] ?? []);
 
-        print(widget.userMail);
-        print(receivedFriendRequests);
-
         setState(() {
           if (mates.contains(widget.userMail)) {
             buttonLabel = "Mate";

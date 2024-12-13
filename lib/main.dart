@@ -1,13 +1,10 @@
-import 'package:de_mate/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_page.dart'; // Ensure this file exists and has the LoginPage class
 import 'register_page.dart'; // Ensure this file exists and has the RegisterPage class
-import 'profile_settings_page.dart';
 import 'theme_provider.dart';
 import 'package:provider/provider.dart';  // Import provider
-import 'user.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

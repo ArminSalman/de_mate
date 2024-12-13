@@ -208,13 +208,15 @@ class _SearchPageState extends State<SearchPage> {
                 color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
               ),
               onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SearchPage(),
-                  ),
-                );
-                cp.setCurrentPage(1);
+                if (cp.getCurrentPage() != 1) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SearchPage(),
+                    ),
+                  );
+                  cp.setCurrentPage(1);
+                }
               },
             ),
             IconButton(
