@@ -39,6 +39,8 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text,
       );
 
+      cp.setCurrentPage(0);
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),

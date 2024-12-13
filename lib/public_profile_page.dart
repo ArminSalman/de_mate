@@ -44,22 +44,25 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
   Future<void> determineButtonLabel() async {
     try {
-      final currentUserEmail = auth.currentUser!.email;
+      final currentUserEmail = auth.currentUser!.email.toString();
       final currentUserDoc = await firestore.collection('users').doc(currentUserEmail).get();
 
       if (currentUserDoc.exists) {
         Map<String, dynamic>? currentUserData = currentUserDoc.data();
         List<String> mates = List<String>.from(currentUserData?["mates"] ?? []);
-        Map<String, dynamic> receivedRequests = Map<String, dynamic>.from(currentUserData?["friendRequests"] ?? {});
-        Map<String, dynamic> sentRequests = Map<String, dynamic>.from(userData?["friendRequests"] ?? {});
+        List<String> receivedFriendRequests = List<String>.from(currentUserData?["receivedFriendRequests"] ?? []);
+        List<String> sentFriendRequests = List<String>.from(currentUserData?["sentFriendRequests"] ?? []);
+
+        print(widget.userMail);
+        print(receivedFriendRequests);
 
         setState(() {
           if (mates.contains(widget.userMail)) {
             buttonLabel = "Mate";
             isMate = true;
-          } else if (receivedRequests.containsKey(widget.userMail)) {
+          } else if (receivedFriendRequests.contains(widget.userMail)) {
             buttonLabel = "Accept Request";
-          } else if (sentRequests.containsKey(currentUserEmail)) {
+          } else if (sentFriendRequests.contains(widget.userMail)) {
             buttonLabel = "Request Sent";
           } else {
             buttonLabel = "Send Request";
@@ -156,30 +159,38 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ElevatedButton.icon(
-                  onPressed: isMate
-                      ? null
+                ElevatedButton(
+                  onPressed: isMate || buttonLabel == "Request Sent"
+                      ? null // Disable the button for mates or if a request is sent
                       : () async {
                     if (buttonLabel == "Send Request") {
                       await userControl.addFriendRequest(widget.userMail, auth.currentUser!.email!);
                     } else if (buttonLabel == "Accept Request") {
-                      await userControl.acceptFriendRequest(widget.userMail, auth.currentUser!.email!, firestore);
+                      await userControl.acceptFriendRequest(widget.userMail, auth.currentUser!.email!);
                     }
-                    await determineButtonLabel();
+                    await determineButtonLabel(); // Update the button label
                   },
-                  icon: const Icon(Icons.person_add),
-                  label: Text(buttonLabel),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isMate ? Colors.grey : Colors.blue[900],
+                    backgroundColor: isMate || buttonLabel == "Request Sent"
+                        ? Colors.grey // Gray for mates or request sent
+                        : Colors.blue, // Blue for other states
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.0),
                     ),
                   ),
+                  child: Text(
+                    buttonLabel,
+                    style: TextStyle(
+                      fontSize: isMate ? 20 : 16, // Larger font size for "Mate"
+                      color: Colors.grey[800],
+                    ),
+                  ),
                 ),
               ],
             ),
+
             const SizedBox(height: 40),
           ],
         ),

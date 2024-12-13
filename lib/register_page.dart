@@ -3,6 +3,7 @@ import 'package:de_mate/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'user.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -25,6 +26,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  final ValueNotifier<bool> _passwordVisible = ValueNotifier(false);
+  final ValueNotifier<bool> _confirmPasswordVisible = ValueNotifier(false);
+
+  UserRepository userControl = UserRepository();
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -34,6 +40,8 @@ class _RegisterPageState extends State<RegisterPage> {
     _birthdateController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _passwordVisible.dispose();
+    _confirmPasswordVisible.dispose();
     super.dispose();
   }
 
@@ -53,29 +61,11 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  // Add user to Firestore
-  Future<void> _addUserToFirestore(String username, String email,String name, String surname) async {
-    await _firestore.collection('users').doc(email).set({
-      'username': username,
-      'email': email,
-      'name': name,
-      'surname': surname,
-      'birthdate': _birthdateController.text,
-      'createdAt': Timestamp.now(),
-      'mates': [],
-      'sups' : {},
-      'deems' : {},
-      'friendRequests' : {},
-    });
-  }
-
-  // Check if the username is unique
   Future<bool> _isUsernameUnique(String username) async {
     final query = await _firestore.collection('users').where('username', isEqualTo: username).get();
     return query.docs.isNotEmpty;
   }
 
-  // Check if the email is unique
   Future<bool> _isEmailUnique(String email) async {
     final query = await _firestore.collection('users').where('email', isEqualTo: email).get();
     return query.docs.isNotEmpty;
@@ -89,28 +79,27 @@ class _RegisterPageState extends State<RegisterPage> {
             const SnackBar(content: Text("Username already exists")),
           );
           return;
-        }else if(await _isEmailUnique(_emailController.text)){
+        } else if (await _isEmailUnique(_emailController.text)) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Email already exists")),
           );
           return;
-        }else{
+        } else {
           await _auth.createUserWithEmailAndPassword(
             email: _emailController.text,
             password: _passwordController.text,
           );
 
-          _addUserToFirestore(_usernameController.text, _emailController.text, _nameController.text, _surnameController.text);
+          userControl.addUserToFirestore(_usernameController.text, _emailController.text, _nameController.text, _surnameController.text, _birthdateController, _firestore);
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Registration successful")),
           );
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const LoginPage())
+            MaterialPageRoute(builder: (context) => const LoginPage()),
           );
         }
-
       } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: ${e.message}")),
@@ -124,7 +113,6 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
@@ -133,7 +121,6 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          // Semi-transparent overlay
           Container(
             color: Colors.black.withOpacity(0.5),
           ),
@@ -184,17 +171,15 @@ class _RegisterPageState extends State<RegisterPage> {
                             icon: Icons.family_restroom,
                           ),
                           _buildDatePickerField(),
-                          _buildTextField(
+                          _buildPasswordField(
                             controller: _passwordController,
                             label: 'Password',
-                            icon: Icons.lock,
-                            obscureText: true,
+                            visibilityNotifier: _passwordVisible,
                           ),
-                          _buildTextField(
+                          _buildPasswordField(
                             controller: _confirmPasswordController,
                             label: 'Confirm Password',
-                            icon: Icons.lock_outline,
-                            obscureText: true,
+                            visibilityNotifier: _confirmPasswordVisible,
                           ),
                           const SizedBox(height: 20),
                           ElevatedButton(
@@ -210,7 +195,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                             child: const Text(
                               'Sign Up',
-                              style: TextStyle(fontSize: 16,color: Colors.blue),
+                              style: TextStyle(fontSize: 16, color: Colors.blue),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -218,10 +203,12 @@ class _RegisterPageState extends State<RegisterPage> {
                             onPressed: () {
                               Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const LoginPage())
-                              );
+                                  MaterialPageRoute(builder: (context) => const LoginPage()));
                             },
-                            child: const Text("Have an account? Login here",style: TextStyle(color: Colors.blue),),
+                            child: const Text(
+                              "Have an account? Login here",
+                              style: TextStyle(color: Colors.blue),
+                            ),
                           ),
                         ],
                       ),
@@ -261,11 +248,50 @@ class _RegisterPageState extends State<RegisterPage> {
           if (label == 'Password' && value.length < 6) {
             return 'Password must be at least 6 characters';
           }
-          if (label == 'Confirm Password' &&
-              value != _passwordController.text) {
+          if (label == 'Confirm Password' && value != _passwordController.text) {
             return 'Passwords do not match';
           }
           return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required ValueNotifier<bool> visibilityNotifier,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: visibilityNotifier,
+        builder: (context, isVisible, child) {
+          return TextFormField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: label,
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(isVisible ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => visibilityNotifier.value = !isVisible,
+              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            obscureText: !isVisible,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your $label';
+              }
+              if (label == 'Password' && value.length < 6) {
+                return 'Password must be at least 6 characters';
+              }
+              if (label == 'Confirm Password' && value != _passwordController.text) {
+                return 'Passwords do not match';
+              }
+              return null;
+            },
+          );
         },
       ),
     );
