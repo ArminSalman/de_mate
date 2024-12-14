@@ -22,7 +22,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
   Map<String, dynamic>? userData;
-  String buttonLabel = "Loading...";
+  String buttonLabel = "Loading";
   bool isMate = false;
 
   Future<void> fetchUserData(String userMail) async {
@@ -50,19 +50,19 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       if (currentUserDoc.exists) {
         Map<String, dynamic>? currentUserData = currentUserDoc.data();
         List<String> mates = List<String>.from(currentUserData?["mates"] ?? []);
-        List<String> receivedFriendRequests = List<String>.from(currentUserData?["receivedFriendRequests"] ?? []);
-        List<String> sentFriendRequests = List<String>.from(currentUserData?["sentFriendRequests"] ?? []);
+        List<String> receivedMateRequests = List<String>.from(currentUserData?["receivedMateRequests"] ?? []);
+        List<String> sentMateRequests = List<String>.from(currentUserData?["sentMateRequests"] ?? []);
 
         setState(() {
           if (mates.contains(widget.userMail)) {
             buttonLabel = "Mate";
             isMate = true;
-          } else if (receivedFriendRequests.contains(widget.userMail)) {
+          } else if (receivedMateRequests.contains(widget.userMail)) {
             buttonLabel = "Accept Request";
-          } else if (sentFriendRequests.contains(widget.userMail)) {
+          } else if (sentMateRequests.contains(widget.userMail)) {
             buttonLabel = "Request Sent";
           } else {
-            buttonLabel = "Send Request";
+            buttonLabel = "Add Mate";
           }
         });
       }
@@ -157,15 +157,25 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: isMate || buttonLabel == "Request Sent"
-                      ? null // Disable the button for mates or if a request is sent
+                  onPressed: buttonLabel == "Request Sent"
+                      ? null // Disable the button if a request is sent
                       : () async {
-                    if (buttonLabel == "Send Request") {
-                      await userControl.addFriendRequest(widget.userMail, auth.currentUser!.email!);
+                    if (buttonLabel == "Add Mate") {
+                      // Send a mate request
+                      await userControl.addMateRequest(widget.userMail, auth.currentUser!.email!);
                     } else if (buttonLabel == "Accept Request") {
-                      await userControl.acceptFriendRequest(widget.userMail, auth.currentUser!.email!);
+                      // Accept a mate request
+                      await userControl.acceptMateRequest(widget.userMail, auth.currentUser!.email!);
+                    } else if (isMate) {
+                      // Perform an action for mates (e.g., unmate or message)
+                      await userControl.removeMate(widget.userMail, auth.currentUser!.email!);
+                      isMate = false;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Mate removed successfully.")),
+                      );
                     }
-                    await determineButtonLabel(); // Update the button label
+                    // Take data to refresh page
+                    await fetchUserData(widget.userMail);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isMate || buttonLabel == "Request Sent"

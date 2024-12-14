@@ -60,10 +60,7 @@ class _LoginPageState extends State<LoginPage> {
           // Background Image
           Container(
             decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/login_background.jpg'), // Replace with your image
-                fit: BoxFit.cover,
-              ),
+
             ),
           ),
           // Semi-transparent overlay

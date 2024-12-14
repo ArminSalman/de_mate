@@ -87,7 +87,7 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 20),
             // Display username
             Text(
-              userData?['username'] ?? "Loading...", // Show username
+              userData?['username'] ?? "Loading", // Show username
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 26,

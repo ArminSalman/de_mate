@@ -28,8 +28,8 @@ class UserRepository {
       'mates': [],
       'sups': [],
       'deems': [],
-      'receivedFriendRequests': [],
-      'sentFriendRequests': [],
+      'receivedMateRequests': [],
+      'sentMateRequests': [],
     });
   }
 
@@ -76,7 +76,7 @@ class UserRepository {
   }
 
   // Add a new friend request
-  Future<void> addFriendRequest(String receiverEmail, String senderEmail) async {
+  Future<void> addMateRequest(String receiverEmail, String senderEmail) async {
     try {
       DocumentSnapshot receiverDoc = await _usersCollection.doc(receiverEmail).get();
       DocumentSnapshot senderDoc = await _usersCollection.doc(senderEmail).get();
@@ -89,32 +89,32 @@ class UserRepository {
       Map<String, dynamic> receiverData = receiverDoc.data() as Map<String, dynamic>;
       Map<String, dynamic> senderData = senderDoc.data() as Map<String, dynamic>;
 
-      List<String> receiverRequests = List<String>.from(receiverData['receivedFriendRequests'] ?? []);
-      List<String> senderRequests = List<String>.from(senderData['sentFriendRequests'] ?? []);
+      List<String> receiverRequests = List<String>.from(receiverData['receivedMateRequests'] ?? []);
+      List<String> senderRequests = List<String>.from(senderData['sentMateRequests'] ?? []);
 
       if (!receiverRequests.contains(senderEmail)) {
         receiverRequests.add(senderEmail);
         senderRequests.add(receiverEmail);
 
         await _usersCollection.doc(receiverEmail).update({
-          'receivedFriendRequests': receiverRequests,
+          'receivedMateRequests': receiverRequests,
         });
 
         await _usersCollection.doc(senderEmail).update({
-          'sentFriendRequests': senderRequests,
+          'sentMateRequests': senderRequests,
         });
 
-        print("Friend request added successfully.");
+        print("Mate request added successfully.");
       } else {
-        print("Friend request already exists.");
+        print("Mate request already exists.");
       }
     } catch (e) {
-      print("Error adding friend request: $e");
+      print("Error adding mate request: $e");
     }
   }
 
   // Accept a friend request
-  Future<void> acceptFriendRequest(String senderEmail, String receiverEmail) async {
+  Future<void> acceptMateRequest(String senderEmail, String receiverEmail) async {
     try {
       DocumentSnapshot senderDoc = await _usersCollection.doc(senderEmail).get();
       DocumentSnapshot receiverDoc = await _usersCollection.doc(receiverEmail).get();
@@ -127,8 +127,8 @@ class UserRepository {
       Map<String, dynamic> senderData = senderDoc.data() as Map<String, dynamic>;
       Map<String, dynamic> receiverData = receiverDoc.data() as Map<String, dynamic>;
 
-      List<String> senderRequests = List<String>.from(senderData['sentFriendRequests'] ?? []);
-      List<String> receiverRequests = List<String>.from(receiverData['receivedFriendRequests'] ?? []);
+      List<String> senderRequests = List<String>.from(senderData['sentMateRequests'] ?? []);
+      List<String> receiverRequests = List<String>.from(receiverData['receivedMateRequests'] ?? []);
 
       List<String> senderMates = List<String>.from(senderData['mates'] ?? []);
       List<String> receiverMates = List<String>.from(receiverData['mates'] ?? []);
@@ -141,26 +141,26 @@ class UserRepository {
         if (!receiverMates.contains(senderEmail)) receiverMates.add(senderEmail);
 
         await _usersCollection.doc(receiverEmail).update({
-          'receivedFriendRequests': receiverRequests,
+          'receivedMateRequests': receiverRequests,
           'mates': receiverMates,
         });
 
         await _usersCollection.doc(senderEmail).update({
-          'sentFriendRequests': senderRequests,
+          'sentMateRequests': senderRequests,
           'mates': senderMates,
         });
 
-        print("Friend request accepted and mates updated.");
+        print("Mate request accepted and mates updated.");
       } else {
-        print("No friend request found to accept.");
+        print("No mate request found to accept.");
       }
     } catch (e) {
-      print("Error accepting friend request: $e");
+      print("Error accepting mate request: $e");
     }
   }
 
   // Remove a friend
-  Future<void> removeFriend(String email, String friendEmail) async {
+  Future<void> removeMate(String email, String friendEmail) async {
     try {
       DocumentSnapshot userDoc = await _usersCollection.doc(email).get();
       DocumentSnapshot friendDoc = await _usersCollection.doc(friendEmail).get();
@@ -182,7 +182,7 @@ class UserRepository {
       await _usersCollection.doc(email).update({'mates': userMates});
       await _usersCollection.doc(friendEmail).update({'mates': friendMates});
 
-      print("Friend removed successfully.");
+      print("Mate removed successfully.");
     } catch (e) {
       print("Error removing friend: $e");
     }
