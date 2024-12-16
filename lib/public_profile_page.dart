@@ -212,7 +212,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               icon: Icon(
                 Icons.home,
                 size: 35,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 if (cp.getCurrentPage() != 0) {
@@ -230,7 +230,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               icon: Icon(
                 Icons.search,
                 size: 35,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 Navigator.pushReplacement(
@@ -246,7 +246,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               icon: Icon(
                 Icons.notifications,
                 size: 30,
-                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 cp.setCurrentPage(2);
@@ -256,7 +256,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               icon: Icon(
                 Icons.person,
                 size: 35,
-                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 if (cp.getCurrentPage() != 3) {

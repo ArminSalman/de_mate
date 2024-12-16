@@ -55,6 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
           IconButton(
             icon: const Icon(Icons.menu),
+            color: Colors.black,
             tooltip: 'Go to the profile settings page',
             onPressed: () {
               Navigator.pushReplacement(
@@ -127,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icon(
                 Icons.home,
                 size: 35,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,),
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,),
               onPressed: () {
                 if (cp.getCurrentPage() != 0) {
                   Navigator.pushReplacement(
@@ -143,7 +144,7 @@ class _ProfilePageState extends State<ProfilePage> {
             IconButton(
               icon: Icon(Icons.search,
                 size: 35,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,),
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,),
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
@@ -157,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
             IconButton(
               icon: Icon(Icons.notifications,
                   size: 30,
-                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey),
+                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black),
               onPressed: () {
 
                 cp.setCurrentPage(2);
@@ -167,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icon(
                   Icons.person,
                   size: 35,
-                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey),
+                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black),
               onPressed: () {
                 if (cp.getCurrentPage() != 3) {
                   Navigator.pushReplacement(

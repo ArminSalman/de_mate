@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:de_mate/mate_profile_page.dart';
 import 'package:de_mate/profile_page.dart';
 import 'package:de_mate/search_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class CurrentPage {
@@ -29,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return PostDialog();
+        return const PostDialog();
       },
     );
   }
@@ -38,9 +40,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Decisions"),
+        title: const Text("Deems"),
       ),
-      body: DecisionList(),
+      body: const DeemList(),
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 6.0,
@@ -51,7 +53,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(
                 Icons.home,
                 size: 35,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 if (cp.getCurrentPage() != 0) {
@@ -69,7 +71,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(
                 Icons.search,
                 size: 35,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 Navigator.pushReplacement(
@@ -86,7 +88,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(
                 Icons.notifications,
                 size: 30,
-                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 cp.setCurrentPage(2);
@@ -96,7 +98,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(
                 Icons.person,
                 size: 35,
-                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 Navigator.pushReplacement(
@@ -112,8 +114,9 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blue[300],
         onPressed: _showPostDialog,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add,color: Colors.black,),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
@@ -121,6 +124,8 @@ class _HomePageState extends State<HomePage> {
 }
 
 class PostDialog extends StatefulWidget {
+  const PostDialog({super.key});
+
   @override
   _PostDialogState createState() => _PostDialogState();
 }
@@ -146,30 +151,76 @@ class _PostDialogState extends State<PostDialog> {
     });
   }
 
-  void _postDecision() async {
+  void _postDeem() async {
     if (_titleController.text.isEmpty ||
         _descriptionController.text.isEmpty ||
-        _optionControllers.any((controller) => controller.text.isEmpty)) return;
-
-    Map<String, dynamic> options = {};
-    for (int i = 0; i < _optionControllers.length; i++) {
-      options['option${i + 1}'] = {'choosen': 0};
+        _optionControllers.any((controller) => controller.text.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all fields")),
+      );
+      return;
     }
 
+    // Collect options
+    Map<String, dynamic> options = {};
+    for (int i = 0; i < _optionControllers.length; i++) {
+      options['option${i + 1}'] = {
+        'chosen': 0,
+        'text': _optionControllers[i].text
+      };
+    }
+
+    // Initialize Firestore and FirebaseAuth instances
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    // Auto increment deem id
+    int deemId = 0;
     try {
-      await FirebaseFirestore.instance.collection('decisions').add({
-        'author': _authorController.text, // Extract the text value from the controller
+      deemId = await userControl.countDocumentsInCollection("deems");
+      deemId++;
+    } catch (e) {
+      print("Error counting documents in 'deems' collection: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to generate deem ID")),
+      );
+      return;
+    }
+
+    String deemIdString = "d_$deemId";
+
+    try {
+      // Check if user is authenticated
+      if (auth.currentUser == null || auth.currentUser!.email == null) {
+        throw Exception("User not authenticated");
+      }
+
+      // Add a new deem to Firestore
+      await firestore.collection('deems').doc(deemIdString).set({
+        'author': _authorController.text.isNotEmpty
+            ? _authorController.text
+            : auth.currentUser!.email, // Use email if author is not provided
         'title': _titleController.text,
         'description': _descriptionController.text,
-        'location': 'Unknown', // Replace with real location if available
+        'location': 'Unknown', // Replace with the real location if available
         'options': options,
-        'published_date': FieldValue.serverTimestamp(),
+        'publishedTime': FieldValue.serverTimestamp(),
+        'isForMate': false, // Set this to true if required
       });
 
+      // Update the user's collection
+      await userControl.addDeemToUser(auth.currentUser!.email!, deemIdString);
+
       Navigator.pop(context); // Close the dialog upon successful posting
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Deem shared successfully!")),
+      );
     } catch (e) {
-      // Log or handle the error
-      print("Failed to post decision: $e");
+      print("Error while posting deem: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to share deem: $e")),
+      );
     }
   }
 
@@ -177,7 +228,7 @@ class _PostDialogState extends State<PostDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Create a New Decision"),
+      title: const Text("Create a New Deem"),
       content: SingleChildScrollView(
         child: Column(
           children: [
@@ -223,7 +274,7 @@ class _PostDialogState extends State<PostDialog> {
           child: const Text("Cancel"),
         ),
         ElevatedButton(
-          onPressed: _postDecision,
+          onPressed: _postDeem,
           child: const Text("Post"),
         ),
       ],
@@ -231,20 +282,22 @@ class _PostDialogState extends State<PostDialog> {
   }
 }
 
-class DecisionList extends StatelessWidget {
+class DeemList extends StatelessWidget {
+  const DeemList({super.key});
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('decisions').snapshots(),
+      stream: FirebaseFirestore.instance.collection('deems').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const CircularProgressIndicator();
 
-        final decisions = snapshot.data!.docs;
+        final deems = snapshot.data!.docs;
 
         return ListView.builder(
-          itemCount: decisions.length,
+          itemCount: deems.length,
           itemBuilder: (context, index) {
-            var decision = decisions[index];
+            var deem = deems[index];
             return Card(
               margin: const EdgeInsets.all(8.0),
               shape: RoundedRectangleBorder(
@@ -252,10 +305,10 @@ class DecisionList extends StatelessWidget {
               ),
               child: ListTile(
                 title: Text(
-                  decision['title'],
+                  deem['title'],
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text(decision['description']),
+                subtitle: Text(deem['description']),
                 onTap: () {
                   // Implement dialog for voting as before
                 },

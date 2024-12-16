@@ -16,6 +16,18 @@ class UserRepository {
     }
   }
 
+  Future<int> countDocumentsInCollection(String collectionName) async {
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance.collection(collectionName).get();
+
+      // Return doc number
+      return snapshot.size;
+    } catch (e) {
+      print("Error counting documents in collection '$collectionName': $e");
+      return 0; // Return 0 when throws an error
+    }
+  }
+
   // Add user to Firestore
   Future<void> addUserToFirestore(String username, String email, String name, String surname, TextEditingController _birthdateController, FirebaseFirestore _firestore) async {
     await _firestore.collection('users').doc(email).set({
@@ -50,6 +62,30 @@ class UserRepository {
       print("User fields updated successfully.");
     } catch (e) {
       print("Error updating user fields: $e");
+    }
+  }
+
+  Future<void> addDeemToUser(String email, String deemId) async {
+    try {
+      final userSnapshot = await getUserByEmail(email);
+
+      if (userSnapshot == null || !userSnapshot.exists) {
+        // If the user document does not exist, create it with a new list of deems
+        await addUserOrUpdate(email, {
+          'deems': [deemId],
+        });
+      } else {
+        // If the user document exists, update the deems list
+        Map<String, dynamic>? userData = userSnapshot.data() as Map<String, dynamic>?;
+        List<dynamic> deems = List<dynamic>.from(userData?['deems'] ?? []);
+
+        if (!deems.contains(deemId)) {
+          deems.add(deemId);
+          await updateUserFields(email, {'deems': deems});
+        }
+      }
+    } catch (e) {
+      print("Error updating user's deems: $e");
     }
   }
 

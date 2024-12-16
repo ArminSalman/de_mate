@@ -73,7 +73,6 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[50],
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -107,10 +106,10 @@ class _SearchPageState extends State<SearchPage> {
             ),
             Expanded(
               child: query.isEmpty
-                  ? Center(
+                  ? const Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.search, size: 100, color: Colors.blue),
                     SizedBox(height: 10),
                     Text(
@@ -186,8 +185,8 @@ class _SearchPageState extends State<SearchPage> {
             IconButton(
               icon: Icon(
                 Icons.home,
-                size: 30,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.grey,
+                size: 35,
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 if (cp.getCurrentPage() != 0) {
@@ -204,8 +203,8 @@ class _SearchPageState extends State<SearchPage> {
             IconButton(
               icon: Icon(
                 Icons.search,
-                size: 30,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.grey,
+                size: 35,
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 if (cp.getCurrentPage() != 1) {
@@ -222,8 +221,8 @@ class _SearchPageState extends State<SearchPage> {
             IconButton(
               icon: Icon(
                 Icons.notifications,
-                size: 30,
-                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.grey,
+                size: 35,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 cp.setCurrentPage(2);
@@ -232,8 +231,8 @@ class _SearchPageState extends State<SearchPage> {
             IconButton(
               icon: Icon(
                 Icons.person,
-                size: 30,
-                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.grey,
+                size: 35,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
                 if (cp.getCurrentPage() != 3) {
