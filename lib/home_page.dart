@@ -5,6 +5,8 @@ import 'package:de_mate/profile_page.dart';
 import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+
 
 class CurrentPage {
   int currentPage = 0;
@@ -28,6 +30,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _isPosting = false;
+
   void _showPostDialog() {
     showDialog(
       context: context,
@@ -42,6 +46,8 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Deems"),
+        backgroundColor: Colors.blue[400],
+        centerTitle: true,
       ),
       body: const DeemList(),
       bottomNavigationBar: BottomAppBar(
@@ -50,82 +56,39 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.home,
-                size: 35,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () {
-                if (cp.getCurrentPage() != 0) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HomePage(),
-                    ),
-                  );
-                  cp.setCurrentPage(0);
-                }
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.search,
-                size: 35,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SearchPage(),
-                  ),
-                );
-                cp.setCurrentPage(1);
-              },
-            ),
-            const SizedBox(width: 40), // Space for the FAB
-            IconButton(
-              icon: Icon(
-                Icons.notifications,
-                size: 30,
-                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationPage(),
-                  ),
-                );
-                cp.setCurrentPage(2);
-              },
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.person,
-                size: 35,
-                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProfilePage(),
-                  ),
-                );
-                cp.setCurrentPage(3);
-              },
-            ),
+            _buildBottomIcon(Icons.home, 0, const HomePage()),
+            _buildBottomIcon(Icons.search, 1, const SearchPage()),
+            const SizedBox(width: 40), // Space for FAB
+            _buildBottomIcon(Icons.notifications, 2, const NotificationPage()),
+            _buildBottomIcon(Icons.person, 3, const ProfilePage()),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue[300],
+        backgroundColor: Colors.blue[400],
         onPressed: _showPostDialog,
-        child: const Icon(Icons.add,color: Colors.black,),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  IconButton _buildBottomIcon(IconData icon, int index, Widget page) {
+    return IconButton(
+      icon: Icon(
+        icon,
+        size: 30,
+        color: cp.getCurrentPage() == index ? Colors.blue : Colors.black,
+      ),
+      onPressed: () {
+        if (cp.getCurrentPage() != index) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => page),
+          );
+          cp.setCurrentPage(index);
+        }
+      },
     );
   }
 }
@@ -134,31 +97,27 @@ class PostDialog extends StatefulWidget {
   const PostDialog({super.key});
 
   @override
-  _PostDialogState createState() => _PostDialogState();
+  State<PostDialog> createState() => _PostDialogState();
 }
 
 class _PostDialogState extends State<PostDialog> {
   final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _authorController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final List<TextEditingController> _optionControllers = [
     TextEditingController(),
     TextEditingController()
   ];
+  bool _isLoading = false;
 
-  void _addOption() {
-    setState(() {
-      _optionControllers.add(TextEditingController());
-    });
+  Future<void> _requestLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      await Geolocator.requestPermission();
+    }
   }
 
-  void _removeOption(int index) {
-    setState(() {
-      _optionControllers.removeAt(index);
-    });
-  }
-
-  void _postDeem() async {
+  Future<void> _postDeem() async {
     if (_titleController.text.isEmpty ||
         _descriptionController.text.isEmpty ||
         _optionControllers.any((controller) => controller.text.isEmpty)) {
@@ -168,7 +127,27 @@ class _PostDialogState extends State<PostDialog> {
       return;
     }
 
-    // Collect options
+    setState(() {
+      _isLoading = true;
+    });
+
+    await _requestLocationPermission();
+
+    Position? position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+    } catch (e) {
+      print("Location error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to get location")),
+      );
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
     Map<String, dynamic> options = {};
     for (int i = 0; i < _optionControllers.length; i++) {
       options['option${i + 1}'] = {
@@ -177,75 +156,63 @@ class _PostDialogState extends State<PostDialog> {
       };
     }
 
-    // Initialize Firestore and FirebaseAuth instances
-    final FirebaseAuth auth = FirebaseAuth.instance;
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final user = FirebaseAuth.instance.currentUser;
 
-    // Auto increment deem id
-    int deemId = 0;
-    try {
-      deemId = await userControl.countDocumentsInCollection("deems");
-      deemId++;
-    } catch (e) {
-      print("Error counting documents in 'deems' collection: $e");
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to generate deem ID")),
+        const SnackBar(content: Text("User not authenticated")),
       );
+      setState(() {
+        _isLoading = false;
+      });
       return;
     }
 
-    String deemIdString = "d_$deemId";
-
     try {
-      // Check if user is authenticated
-      if (auth.currentUser == null || auth.currentUser!.email == null) {
-        throw Exception("User not authenticated");
-      }
-
-      // Add a new deem to Firestore
-      await firestore.collection('deems').doc(deemIdString).set({
-        'author': _authorController.text.isNotEmpty
-            ? _authorController.text
-            : auth.currentUser!.email, // Use email if author is not provided
+      await firestore.collection('deems').add({
+        'author': user.email,
         'title': _titleController.text,
         'description': _descriptionController.text,
-        'location': 'Unknown', // Replace with the real location if available
+        'location': {'latitude': position.latitude, 'longitude': position.longitude},
         'options': options,
         'publishedTime': FieldValue.serverTimestamp(),
-        'isForMate': false, // Set this to true if required
+        'isForMate': false,
       });
 
-      // Update the user's collection
-      await userControl.addDeemToUser(auth.currentUser!.email!, deemIdString);
-
-      Navigator.pop(context); // Close the dialog upon successful posting
+      Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Deem shared successfully!")),
+        const SnackBar(content: Text("Deem posted successfully!")),
       );
     } catch (e) {
-      print("Error while posting deem: $e");
+      print("Error posting deem: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to share deem: $e")),
+        SnackBar(content: Text("Failed to post deem: $e")),
       );
     }
-  }
 
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Create a New Deem"),
+      title: const Text("Create New Deem"),
       content: SingleChildScrollView(
         child: Column(
           children: [
             TextField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
+              decoration: const InputDecoration(labelText: "Title"),
+              maxLength: 50,
             ),
             TextField(
               controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: const InputDecoration(labelText: "Description"),
+              maxLength: 200,
             ),
             ..._optionControllers.asMap().entries.map((entry) {
               int index = entry.key;
@@ -255,23 +222,31 @@ class _PostDialogState extends State<PostDialog> {
                   Expanded(
                     child: TextField(
                       controller: controller,
-                      decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                      decoration: InputDecoration(labelText: "Option ${index + 1}"),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle),
-                    onPressed: _optionControllers.length > 2
-                        ? () => _removeOption(index)
-                        : null,
-                  ),
+                  if (_optionControllers.length > 2)
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      onPressed: () => setState(() {
+                        _optionControllers.removeAt(index);
+                      }),
+                    ),
                 ],
               );
             }),
             TextButton.icon(
-              onPressed: _addOption,
+              onPressed: () => setState(() {
+                _optionControllers.add(TextEditingController());
+              }),
               icon: const Icon(Icons.add),
               label: const Text("Add Option"),
             ),
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              ),
           ],
         ),
       ),
@@ -281,7 +256,7 @@ class _PostDialogState extends State<PostDialog> {
           child: const Text("Cancel"),
         ),
         ElevatedButton(
-          onPressed: _postDeem,
+          onPressed: _isLoading ? null : _postDeem,
           child: const Text("Post"),
         ),
       ],
@@ -292,12 +267,25 @@ class _PostDialogState extends State<PostDialog> {
 class DeemList extends StatelessWidget {
   const DeemList({super.key});
 
+  Future<void> _addSup(String docId, String optionKey, int currentSup) async {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    try {
+      // Seçilen option için sup sayısını artır
+      await firestore.collection('deems').doc(docId).update({
+        'options.$optionKey.sups': currentSup + 1,
+      });
+    } catch (e) {
+      print("Error adding sup: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('deems').snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const CircularProgressIndicator();
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
         final deems = snapshot.data!.docs;
 
@@ -305,20 +293,39 @@ class DeemList extends StatelessWidget {
           itemCount: deems.length,
           itemBuilder: (context, index) {
             var deem = deems[index];
+            var options = deem['options'] as Map<String, dynamic>;
+
             return Card(
               margin: const EdgeInsets.all(8.0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-              child: ListTile(
-                title: Text(
-                  deem['title'],
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(deem['description']),
-                onTap: () {
-                  // Implement dialog for voting as before
-                },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    title: Text(deem['title'] ?? "No Title"),
+                    subtitle: Text(deem['description'] ?? "No Description"),
+                  ),
+                  const Divider(),
+                  // Seçenekleri Listele
+                  ...options.entries.map((entry) {
+                    String optionKey = entry.key; // option1, option2, vb.
+                    String optionText = entry.value['text'];
+                    int sups = entry.value['sups'] ?? 0;
+
+                    return ListTile(
+                      title: Text(optionText),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text("$sups"), // Sup sayısını göster
+                          IconButton(
+                            icon: const Icon(Icons.thumb_up, color: Colors.blue),
+                            onPressed: () => _addSup(deem.id, optionKey, sups),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
               ),
             );
           },
@@ -327,3 +334,5 @@ class DeemList extends StatelessWidget {
     );
   }
 }
+
+
