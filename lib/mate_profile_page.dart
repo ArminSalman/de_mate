@@ -1,8 +1,7 @@
-import 'package:de_mate/profile_settings_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'user.dart';
+import 'components/user.dart';
 
 class MateProfilePage extends StatefulWidget {
   const MateProfilePage({super.key, required this.mateMail});
@@ -89,18 +88,6 @@ class _MateProfilePageState extends State<MateProfilePage> {
             Navigator.pop(context); // Go back to the previous page
           },
         ),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.menu),
-            tooltip: 'Go to the profile settings page',
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileSettingsPage()),
-              );
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -146,25 +133,40 @@ class _MateProfilePageState extends State<MateProfilePage> {
             ),
             const SizedBox(height: 30),
             // Show only the "Mate" button if the user is a mate
-            if (isMate)
-              ElevatedButton(
-                onPressed: null, // Disable the button since the user is already a mate
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                ),
-                child: Text(
-                  buttonLabel,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
+            // Show different buttons based on whether the user is a mate
+            ElevatedButton(
+              onPressed: () async {
+                if (isMate) {
+                  // Remove mate logic
+                  await userControl.removeMate(auth.currentUser!.email!, widget.mateMail);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Mate removed successfully.")),
+                  );
+                  await determineButtonLabel(); // Refresh button state
+                } else {
+                  // Send mate request logic
+                  await userControl.addMateRequest(widget.mateMail, auth.currentUser!.email!);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Mate request sent successfully.")),
+                  );
+                  await determineButtonLabel(); // Refresh button state
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isMate ? Colors.grey : Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
                 ),
               ),
+              child: Text(
+                buttonLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+            ),
             const SizedBox(height: 40),
           ],
         ),

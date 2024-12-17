@@ -1,11 +1,12 @@
 import 'package:de_mate/home_page.dart';
+import 'package:de_mate/notification_page.dart';
 import 'package:de_mate/profile_page.dart';
 import 'package:de_mate/profile_settings_page.dart';
 import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'user.dart';
+import 'components/user.dart';
 
 class PublicProfilePage extends StatefulWidget {
   const PublicProfilePage({super.key, required this.userMail});
@@ -167,7 +168,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                       // Accept a mate request
                       await userControl.acceptMateRequest(widget.userMail, auth.currentUser!.email!);
                     } else if (isMate) {
-                      // Perform an action for mates (e.g., unmate or message)
+                      // Remove mate
                       await userControl.removeMate(widget.userMail, auth.currentUser!.email!);
                       isMate = false;
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -249,6 +250,12 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationPage(),
+                  ),
+                );
                 cp.setCurrentPage(2);
               },
             ),

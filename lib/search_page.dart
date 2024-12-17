@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:de_mate/notification_page.dart';
 import 'package:de_mate/public_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -225,6 +226,18 @@ class _SearchPageState extends State<SearchPage> {
                 color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
               ),
               onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationPage(),
+                  ),
+                );
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationPage(),
+                  ),
+                );
                 cp.setCurrentPage(2);
               },
             ),

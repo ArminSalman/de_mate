@@ -1,4 +1,5 @@
 import 'package:de_mate/home_page.dart';
+import 'package:de_mate/notification_page.dart';
 import 'package:de_mate/profile_settings_page.dart';
 import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -160,7 +161,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   size: 30,
                   color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black),
               onPressed: () {
-
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationPage(),
+                  ),
+                );
                 cp.setCurrentPage(2);
               },
             ),

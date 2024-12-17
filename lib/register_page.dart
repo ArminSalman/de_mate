@@ -3,7 +3,7 @@ import 'package:de_mate/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'user.dart';
+import 'components/user.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
