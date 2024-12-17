@@ -168,13 +168,45 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                       // Accept a mate request
                       await userControl.acceptMateRequest(widget.userMail, auth.currentUser!.email!);
                     } else if (isMate) {
-                      // Remove mate
-                      await userControl.removeMate(widget.userMail, auth.currentUser!.email!);
-                      isMate = false;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Mate removed successfully.")),
-                      );
+                      // Show confirmation dialog
+                      bool shouldRemove = await showDialog<bool>(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Remove Mate'),
+                            content: const Text('Are you sure you want to remove this mate?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop(false); // User pressed Cancel
+                                },
+                                child: const Text('Cancel',style: TextStyle(color: Colors.black),),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop(true); // User pressed Confirm
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text('Remove',style: TextStyle(color: Colors.white),),
+                              ),
+                            ],
+                          );
+                        },
+                      ) ?? false; // Default to false if the dialog is dismissed without a selection.
+
+                      // Proceed only if the user confirms
+                      if (shouldRemove) {
+                        // Remove mate
+                        await userControl.removeMate(widget.userMail, auth.currentUser!.email!);
+                        isMate = false;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Mate removed successfully.")),
+                        );
+                      }
                     }
+
                     // Take data to refresh page
                     await fetchUserData(widget.userMail);
                   },
