@@ -61,15 +61,71 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           } else if (receivedMateRequests.contains(widget.userMail)) {
             buttonLabel = "Accept Request";
           } else if (sentMateRequests.contains(widget.userMail)) {
-            buttonLabel = "Request Sent";
+            buttonLabel = "Request Sent"; // Initially shows "Request Sent"
           } else {
-            buttonLabel = "Add Mate";
+            buttonLabel = "Add Mate"; // Default state
           }
         });
       }
     } catch (e) {
       showError("Error determining button label: $e");
     }
+  }
+
+  Future<void> _handleMateRequest() async {
+    if (buttonLabel == "Request Sent") {
+      // Handle deleting the sent mate request
+      await userControl.deleteMateRequest(widget.userMail, auth.currentUser!.email!);
+      setState(() {
+        buttonLabel = "Add Mate"; // Change the button label to "Add Mate"
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mate request deleted.")));
+    } else if (buttonLabel == "Add Mate") {
+      // Send a mate request
+      await userControl.addMateRequest(widget.userMail, auth.currentUser!.email!);
+      setState(() {
+        buttonLabel = "Request Sent"; // Change the button label to "Request Sent"
+      });
+    } else if (buttonLabel == "Accept Request") {
+      // Accept a mate request
+      await userControl.acceptMateRequest(widget.userMail, auth.currentUser!.email!);
+    } else if (isMate) {
+      // Show confirmation dialog to remove a mate
+      bool shouldRemove = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Remove Mate'),
+            content: const Text('Are you sure you want to remove this mate?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(false); // User pressed Cancel
+                },
+                child: const Text('Cancel', style: TextStyle(color: Colors.black)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true); // User pressed Confirm
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Remove', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ) ?? false; // Default to false if the dialog is dismissed without a selection.
+
+      if (shouldRemove) {
+        await userControl.removeMate(widget.userMail, auth.currentUser!.email!);
+        setState(() {
+          isMate = false;
+          buttonLabel = "Add Mate"; // Reset button label after removal
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Mate removed successfully.")));
+      }
+    }
+    await fetchUserData(widget.userMail); // Refresh user data
   }
 
   void showError(String message) {
@@ -158,58 +214,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: buttonLabel == "Request Sent"
-                      ? null // Disable the button if a request is sent
-                      : () async {
-                    if (buttonLabel == "Add Mate") {
-                      // Send a mate request
-                      await userControl.addMateRequest(widget.userMail, auth.currentUser!.email!);
-                    } else if (buttonLabel == "Accept Request") {
-                      // Accept a mate request
-                      await userControl.acceptMateRequest(widget.userMail, auth.currentUser!.email!);
-                    } else if (isMate) {
-                      // Show confirmation dialog
-                      bool shouldRemove = await showDialog<bool>(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text('Remove Mate'),
-                            content: const Text('Are you sure you want to remove this mate?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop(false); // User pressed Cancel
-                                },
-                                child: const Text('Cancel',style: TextStyle(color: Colors.black),),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop(true); // User pressed Confirm
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                ),
-                                child: const Text('Remove',style: TextStyle(color: Colors.white),),
-                              ),
-                            ],
-                          );
-                        },
-                      ) ?? false; // Default to false if the dialog is dismissed without a selection.
-
-                      // Proceed only if the user confirms
-                      if (shouldRemove) {
-                        // Remove mate
-                        await userControl.removeMate(widget.userMail, auth.currentUser!.email!);
-                        isMate = false;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Mate removed successfully.")),
-                        );
-                      }
-                    }
-
-                    // Take data to refresh page
-                    await fetchUserData(widget.userMail);
-                  },
+                  onPressed: _handleMateRequest,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isMate || buttonLabel == "Request Sent"
                         ? Colors.grey // Gray for mates or request sent
@@ -230,7 +235,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 40),
           ],
         ),

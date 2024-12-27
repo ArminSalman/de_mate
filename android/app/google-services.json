@@ -12,7 +12,12 @@
           "package_name": "com.example.de_mate"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "450319658041-iokk68vpkeecqpm6l0lu76ffe9feeekn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAKeJwtE1nj7V_ASLLbyZbqc8oD876UOe4"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "450319658041-iokk68vpkeecqpm6l0lu76ffe9feeekn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "450319658041-dadnjtae3j05konqpg7itfjvenqcfprv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.deMate"
+              }
+            }
+          ]
         }
       }
     }

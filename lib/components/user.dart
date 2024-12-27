@@ -149,6 +149,42 @@ class UserRepository {
     }
   }
 
+  // Delete a sent mate request
+  Future<void> deleteMateRequest(String receiverEmail, String senderEmail) async {
+    try {
+      DocumentSnapshot receiverDoc = await _usersCollection.doc(receiverEmail).get();
+      DocumentSnapshot senderDoc = await _usersCollection.doc(senderEmail).get();
+
+      if (!receiverDoc.exists || !senderDoc.exists) {
+        print("One or both users do not exist.");
+        return;
+      }
+
+      Map<String, dynamic> receiverData = receiverDoc.data() as Map<String, dynamic>;
+      Map<String, dynamic> senderData = senderDoc.data() as Map<String, dynamic>;
+
+      List<String> receiverRequests = List<String>.from(receiverData['receivedMateRequests'] ?? []);
+      List<String> senderRequests = List<String>.from(senderData['sentMateRequests'] ?? []);
+
+      // Remove the sender's email from the receiver's received requests and vice versa
+      receiverRequests.remove(senderEmail);
+      senderRequests.remove(receiverEmail);
+
+      // Update the Firestore documents
+      await _usersCollection.doc(receiverEmail).update({
+        'receivedMateRequests': receiverRequests,
+      });
+
+      await _usersCollection.doc(senderEmail).update({
+        'sentMateRequests': senderRequests,
+      });
+
+      print("Mate request deleted successfully.");
+    } catch (e) {
+      print("Error deleting mate request: $e");
+    }
+  }
+
   // Accept a friend request
   Future<void> acceptMateRequest(String senderEmail, String receiverEmail) async {
     try {

@@ -120,7 +120,7 @@ class _MainPageState extends State<MainPage> {
                   ),
                   child: const Text(
                     "Register",
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16,color: Colors.blue),
                   ),
                 ),
               ],
