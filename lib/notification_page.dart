@@ -30,12 +30,10 @@ class _NotificationPageState extends State<NotificationPage> {
     _initializeFCM();
     _setupRealTimeNotifications();
     _initializeLocalNotifications();
+    _getToken();
   }
 
-
-
   Future<void> _initializeFCM() async {
-    // Request permissions for notifications
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -48,29 +46,44 @@ class _NotificationPageState extends State<NotificationPage> {
       print('User declined or did not accept notification permissions.');
     }
 
-    // Handle foreground notifications
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Received notification in foreground: ${message.notification?.title}');
-      _showSnackBar("New Notification: ${message.notification?.title}");
-      _showLocalNotification(message); // Show local notification in foreground
-      _fetchNotifications(); // Refresh notifications
+      print('Foreground notification received: ${message.notification?.title}');
+      _showLocalNotification(message);
+      _fetchNotifications();
     });
 
-    // Handle background notifications
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // Retrieve device token
-    String? token = await _firebaseMessaging.getToken();
-    print('FCM Token: $token');
-    // Optionally, save this token to your backend for targeted notifications
   }
 
   Future<void> _initializeLocalNotifications() async {
-    var androidInit = AndroidInitializationSettings('app_icon');
-    var initSettings = InitializationSettings(
+    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('app_icon');
+    const InitializationSettings initSettings = InitializationSettings(
       android: androidInit,
     );
-    await flutterLocalNotificationsPlugin.initialize(initSettings);
+
+    await flutterLocalNotificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload != null) {
+          print('Notification clicked with payload: ${response.payload}');
+        }
+      },
+    );
+  }
+
+  Future<void> _getToken() async {
+    try {
+      String? token = await _firebaseMessaging.getToken();
+      print('FCM Token: $token');
+
+      if (token != null) {
+        FirebaseFirestore.instance.collection('users').doc(_currentUserEmail).update({
+          'fcmToken': token,
+        });
+      }
+    } catch (e) {
+      print('Error fetching FCM token: $e');
+    }
   }
 
   void _setupRealTimeNotifications() {
@@ -108,7 +121,7 @@ class _NotificationPageState extends State<NotificationPage> {
     try {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('deems')
-          .where('location', isEqualTo: 'nearby') // Example filter
+          .where('location', isEqualTo: 'nearby')
           .get();
 
       return snapshot.docs.map((doc) {
@@ -153,6 +166,14 @@ class _NotificationPageState extends State<NotificationPage> {
   void _handleMateRequest(String senderEmail) async {
     await _userController.acceptMateRequest(senderEmail, _currentUserEmail);
     _showSnackBar("Mate request accepted!");
+
+    FirebaseFirestore.instance.collection('notifications').add({
+      'recipient': senderEmail,
+      'title': "Mate Request Accepted",
+      'body': "Your mate request was accepted by $_currentUserEmail.",
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
     _fetchNotifications();
   }
 
@@ -161,7 +182,7 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
-    var androidDetails = AndroidNotificationDetails(
+    var androidDetails = const AndroidNotificationDetails(
       'channel_id',
       'channel_name',
       importance: Importance.max,
@@ -288,5 +309,22 @@ class _NotificationPageState extends State<NotificationPage> {
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Background message received: ${message.notification?.title}');
-  // Handle background message here
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+
+  var androidDetails = const AndroidNotificationDetails(
+    'channel_id',
+    'channel_name',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
+
+  var notificationDetails = NotificationDetails(android: androidDetails);
+
+  await flutterLocalNotificationsPlugin.show(
+    0,
+    message.notification?.title,
+    message.notification?.body,
+    notificationDetails,
+  );
 }
