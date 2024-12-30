@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'mate_profile_page.dart'; // Import the PublicProfilePage
-import 'components/user.dart';
+import 'services/user.dart';
 
 class DisplayMatesPage extends StatefulWidget {
   const DisplayMatesPage({super.key});

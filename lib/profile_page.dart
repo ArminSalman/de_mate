@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'display_mates_page.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -82,7 +83,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey.shade300,
-                  child: const Icon(Icons.person, size: 60, color: Colors.white),
+                  child: SvgPicture.network(
+                    userData?['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
+                    placeholderBuilder: (context) => const CircularProgressIndicator(),
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ],
             ),

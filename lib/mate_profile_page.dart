@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'components/user.dart';
+import 'services/user.dart';
 
 class MateProfilePage extends StatefulWidget {
   const MateProfilePage({super.key, required this.mateMail});

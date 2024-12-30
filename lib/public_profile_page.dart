@@ -6,7 +6,7 @@ import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'components/user.dart';
+import 'services/user.dart';
 
 class PublicProfilePage extends StatefulWidget {
   const PublicProfilePage({super.key, required this.userMail});
@@ -179,7 +179,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey.shade300,
-                  child: const Icon(Icons.person, size: 60, color: Colors.white),
+                  child: Image.network(userData?['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true"),
                 ),
               ],
             ),

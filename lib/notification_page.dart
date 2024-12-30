@@ -6,7 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'home_page.dart';
 import 'search_page.dart';
 import 'profile_page.dart';
-import 'components/user.dart';
+import 'services/user.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
