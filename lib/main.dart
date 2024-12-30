@@ -4,7 +4,7 @@ import 'firebase_options.dart';
 import 'login_page.dart'; // Ensure this file exists and has the LoginPage class
 import 'register_page.dart'; // Ensure this file exists and has the RegisterPage class
 import 'theme_provider.dart';
-import 'package:provider/provider.dart';  // Import provider
+import 'package:provider/provider.dart'; // Import provider
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,9 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           theme: ThemeData.light(), // Light theme
           darkTheme: ThemeData.dark(), // Dark theme
-          themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light, // Conditionally apply dark or light theme
+          themeMode: themeProvider.isDarkMode
+              ? ThemeMode.dark
+              : ThemeMode.light, // Conditionally apply dark or light theme
           home: const MainPage(), // Your home page
         );
       },
@@ -95,11 +97,13 @@ class _MainPageState extends State<MainPage> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const LoginPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 93, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 93, vertical: 12),
                     backgroundColor: Colors.blue,
                   ),
                   child: const Text(
@@ -112,15 +116,17 @@ class _MainPageState extends State<MainPage> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const RegisterPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const RegisterPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 84, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 84, vertical: 12),
                   ),
                   child: const Text(
                     "Register",
-                    style: TextStyle(fontSize: 16,color: Colors.blue),
+                    style: TextStyle(fontSize: 16, color: Colors.blue),
                   ),
                 ),
               ],

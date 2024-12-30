@@ -32,6 +32,8 @@ class _NotificationPageState extends State<NotificationPage> {
     _initializeLocalNotifications();
   }
 
+
+
   Future<void> _initializeFCM() async {
     // Request permissions for notifications
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
