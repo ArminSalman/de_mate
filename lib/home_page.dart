@@ -30,8 +30,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final String currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? "";
-
   Map<String, String> userChoices = {}; // Kullanıcının yaptığı seçimler
+  Map<String, bool> expandedPosts = {}; // Her gönderi için genişleme durumu
+  bool isLoading = false; // Paylaşım işlemi sırasında butonu devre dışı bırakmak için
 
   Future<int> _getNextDeemId() async {
     final counterRef = firestore.collection('counters').doc('deems');
@@ -93,6 +94,7 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         userChoices[docId] = optionKey;
+        expandedPosts[docId] = true; // Gönderi genişlemiş olarak kalmaya devam eder
       });
 
       final currentContext = context;
@@ -200,13 +202,21 @@ class _HomePageState extends State<HomePage> {
                   child: const Text("Cancel"),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                    setState(() {
+                      isLoading = true;
+                    });
                     if (titleController.text.isEmpty ||
                         descriptionController.text.isEmpty ||
                         optionControllers.any((controller) => controller.text.isEmpty)) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Please fill in all fields")),
                       );
+                      setState(() {
+                        isLoading = false;
+                      });
                       return;
                     }
 
@@ -243,6 +253,9 @@ class _HomePageState extends State<HomePage> {
                         SnackBar(content: Text("Failed to create post: $e")),
                       );
                     }
+                    setState(() {
+                      isLoading = false;
+                    });
                   },
                   child: const Text("Post"),
                 ),
@@ -254,116 +267,176 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildPostCard(DocumentSnapshot deem) {
+    final data = deem.data() as Map<String, dynamic>;
+    final options = data['options'] as Map<String, dynamic>;
+    final isForMate = data['isForMate'] as bool;
+    final String deemId = deem.id;
+
+    if (isForMate && !(data['mates'] as List<dynamic>).contains(currentUserEmail)) {
+      return const SizedBox.shrink(); // Eğer kullanıcı arkadaş değilse, gösterme
+    }
+
+    final bool isExpanded = expandedPosts[deemId] ?? false;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            expandedPosts[deemId] = !isExpanded;
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(data['profilePicture'] ?? "https://via.placeholder.com/150"),
+                    radius: 25,
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['authorUsername'] ?? "Unknown",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        data['author'] ?? "",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Icon(
+                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    size: 24,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                data['title'] ?? "No Title",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                data['description'] ?? "No Description",
+                style: const TextStyle(fontSize: 16),
+              ),
+              if (isExpanded) ...[
+                const SizedBox(height: 10),
+                ...options.entries.map((entry) {
+                  final optionKey = entry.key;
+                  final optionData = entry.value as Map<String, dynamic>;
+                  final isSelected = userChoices[deem.id] == optionKey;
+
+                  return ListTile(
+                    title: Text(optionData['text']),
+                    trailing: Text("${optionData['chosen']} votes"),
+                    onTap: () => _chooseOption(deem.id, optionKey, optionData['text']),
+                    tileColor: isSelected ? Colors.blue.shade100 : null,
+                  );
+                }).toList(),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Home Feed")),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: firestore
-            .collection('deems')
-            .orderBy('publishedTime', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+        appBar: AppBar(title: const Text("Home Feed")),
+        body: StreamBuilder<QuerySnapshot>(
+          stream: firestore
+              .collection('deems')
+              .orderBy('publishedTime', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final deems = snapshot.data!.docs;
+            final deems = snapshot.data!.docs;
 
-          return ListView.builder(
-            itemCount: deems.length,
-            itemBuilder: (context, index) {
-              final deem = deems[index];
-              final data = deem.data() as Map<String, dynamic>;
-              final options = data['options'] as Map<String, dynamic>;
-              final isForMate = data['isForMate'] as bool;
-
-              if (isForMate && !(data['mates'] as List<dynamic>).contains(currentUserEmail)) {
-                return const SizedBox.shrink(); // Eğer kullanıcı arkadaş değilse, gösterme
-              }
-
-              return Card(
-                margin: const EdgeInsets.all(8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ListTile(
-                      title: Text(data['title'] ?? "No Title"),
-                      subtitle: Text("by ${data['authorUsername'] ?? "Unknown"}"),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Text(data['description'] ?? "No Description"),
-                    ),
-                    const Divider(),
-                    ...options.entries.map((entry) {
-                      final optionKey = entry.key;
-                      final optionData = entry.value as Map<String, dynamic>;
-                      final isSelected = userChoices[deem.id] == optionKey;
-
-                      return ListTile(
-                        title: Text(optionData['text']),
-                        trailing: Text("${optionData['chosen']} oy"),
-                        onTap: () => _chooseOption(deem.id, optionKey, optionData['text']),
-                        tileColor: isSelected ? Colors.blue.shade100 : null,
-                      );
-                    }).toList(),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 6.0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              icon: Icon(
-                Icons.home,
-                size: 35,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () => _navigateToPage(0),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.search,
-                size: 35,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () => _navigateToPage(1),
-            ),
-            const SizedBox(width: 40), // FAB için boşluk
-            IconButton(
-              icon: Icon(
-                Icons.notifications,
-                size: 30,
-                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () => _navigateToPage(2),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.person,
-                size: 35,
-                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
-              ),
-              onPressed: () => _navigateToPage(3),
-            ),
-          ],
+            return ListView.builder(
+              itemCount: deems.length,
+              itemBuilder: (context, index) {
+                final deem = deems[index];
+                return _buildPostCard(deem);
+              },
+            );
+          },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue[300],
-        onPressed: _createPost,
-        child: const Icon(Icons.add, color: Colors.black),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+    notchMargin: 6.0,
+    child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+    IconButton(
+    icon: Icon(
+    Icons.home,
+    size: 35,
+    color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
+    ),
+    onPressed: () => _navigateToPage(0),
+    ),
+    IconButton(
+    icon: Icon(
+    Icons.search,
+    size: 35,
+    color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
+    ),
+    onPressed: () => _navigateToPage(1),
+    ),
+    const SizedBox(width: 40), // FAB için boşluk
+    IconButton(
+    icon: Icon(
+    Icons.notifications,
+    size: 30,
+    color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
+    ),
+    onPressed: () => _navigateToPage(2),
+    ),
+    IconButton(
+    icon: Icon(
+    Icons.person,
+    size: 35,
+    color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
+    ),
+    onPressed: () => _navigateToPage(3),
+    ),
+    ],
+    ),
+    ),
+    floatingActionButton: FloatingActionButton(
+    backgroundColor: Colors.blue[300],
+    onPressed: _createPost,
+    child: const Icon(Icons.add, color: Colors.black),
+    ),
+    floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }
- 
