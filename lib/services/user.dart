@@ -37,6 +37,7 @@ class UserRepository {
       'surname': surname,
       'birthdate': _birthdateController.text,
       'createdAt': Timestamp.now(),
+      'profilePicture' : "https://api.dicebear.com/9.x/adventurer/svg?seed=Kimberly",
       'mates': [],
       'sups': [],
       'deems': [],

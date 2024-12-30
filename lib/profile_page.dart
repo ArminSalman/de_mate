@@ -84,7 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   radius: 60,
                   backgroundColor: Colors.grey.shade300,
                   child: SvgPicture.network(
-                    "https://api.dicebear.com/9.x/adventurer/svg?seed=Kimberly",
+                    userData?['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
                     placeholderBuilder: (context) => const CircularProgressIndicator(),
                     fit: BoxFit.contain,
                   ),

@@ -179,7 +179,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey.shade300,
-                  child: const Icon(Icons.person, size: 60, color: Colors.white),
+                  child: Image.network(userData?['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true"),
                 ),
               ],
             ),
