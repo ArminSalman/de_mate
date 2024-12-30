@@ -6,6 +6,7 @@ import 'package:de_mate/search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_svg/svg.dart';
 import 'services/user.dart';
 
 class PublicProfilePage extends StatefulWidget {
@@ -179,7 +180,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey.shade300,
-                  child: Image.network(userData?['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true"),
+                  child: SvgPicture.network(
+                    userData?['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
+                    placeholderBuilder: (context) => const CircularProgressIndicator(),
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ],
             ),
