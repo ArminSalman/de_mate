@@ -19,6 +19,26 @@ class UserRepository {
     }
   }
 
+  Future<List<DocumentSnapshot>> fetchUserDeems(String userEmail) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userEmail).get();
+      List<dynamic> deemIds = userDoc.data()?['deems'] ?? [];
+
+      List<DocumentSnapshot> deems = [];
+      for (var id in deemIds) {
+        var deem = await FirebaseFirestore.instance.collection('deems').doc(id).get();
+        if (deem.exists) {
+          deems.add(deem);
+        }
+      }
+      return deems;
+    } catch (e) {
+      print('Error fetching user deems: $e');
+      return [];
+    }
+  }
+
+
   Future<int> countDocumentsInCollection(String collectionName) async {
     try {
       final QuerySnapshot snapshot = await FirebaseFirestore.instance.collection(collectionName).get();

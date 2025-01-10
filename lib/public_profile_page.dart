@@ -24,6 +24,9 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
   Map<String, dynamic>? userData;
+  Map<String, bool> expandedPosts = {};
+  Map<String, String> userChoices = {};
+  List<DocumentSnapshot> userDeems = [];
   String buttonLabel = "Loading";
   bool isMate = false;
 
@@ -43,6 +46,69 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       showError("Failed to fetch user data: $e");
     }
   }
+
+  Future<void> _loadUserDeems() async {
+    final deems = await UserRepository().fetchUserDeems(widget.userMail);
+    print("Fetched deems: $deems"); // Hata ayıklama için eklendi
+    setState(() {
+      userDeems = deems;
+    });
+  }
+
+  Future<void> _chooseOption(String docId, String optionKey, String optionText) async {
+    final currentUserEmail = auth.currentUser?.email ?? "";
+
+    if (currentUserEmail.isEmpty) return;
+
+    final docRef = firestore.collection('deems').doc(docId);
+    final userDocRef = firestore.collection('users').doc(currentUserEmail);
+
+    try {
+      await firestore.runTransaction((transaction) async {
+        final docSnapshot = await transaction.get(docRef);
+        final userSnapshot = await transaction.get(userDocRef);
+
+        if (!docSnapshot.exists || !userSnapshot.exists) {
+          throw Exception("Deem or User document does not exist.");
+        }
+
+        final data = docSnapshot.data() as Map<String, dynamic>;
+        final userData = userSnapshot.data() as Map<String, dynamic>;
+
+        final Map<String, dynamic> options = Map<String, dynamic>.from(data['options']);
+        final Map<String, String> votes = Map<String, String>.from(userData['votes'] ?? {});
+
+        final String? previousOption = votes[docId];
+
+        if (previousOption != null) {
+          options[previousOption]['chosen'] -= 1; // Önceki seçimi azalt
+        }
+
+        options[optionKey]['chosen'] += 1; // Yeni seçimi artır
+
+        votes[docId] = optionKey; // Kullanıcının oyunu güncelle
+
+        transaction.update(docRef, {'options': options});
+        transaction.update(userDocRef, {'votes': votes});
+      });
+
+      setState(() {
+        userChoices[docId] = optionKey;
+        expandedPosts[docId] = true; // Gönderi genişlemiş olarak kalmaya devam eder
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("$optionText seçildi!")),
+      );
+    } catch (e) {
+      print("Error updating choice: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Seçim kaydedilirken bir hata oluştu.")),
+      );
+    }
+  }
+
+
 
   Future<void> determineButtonLabel() async {
     try {
@@ -137,6 +203,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   void initState() {
     super.initState();
     fetchUserData(widget.userMail);
+    _loadUserDeems(); // Deemleri yükle
   }
 
   @override
@@ -241,6 +308,30 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               ],
             ),
             const SizedBox(height: 40),
+            // Yeni eklenen Deem Listesi
+            const Text(
+              "Deems",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            userDeems.isEmpty
+                ? const Center(
+              child: Text("No deems yet."),
+            )
+                : ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: userDeems.length,
+              itemBuilder: (context, index) {
+                final deem = userDeems[index].data() as Map<String, dynamic>;
+                return Card(
+                  child: ListTile(
+                    title: Text(deem['title'] ?? 'No Title'),
+                    subtitle: Text(deem['description'] ?? 'No Description'),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -324,6 +415,133 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       ),
     );
   }
+
+  Widget _buildPostCard(DocumentSnapshot deem) {
+    final currentUserEmail = auth.currentUser?.email ?? "";
+    final data = deem.data() as Map<String, dynamic>;
+    final options = data['options'] as Map<String, dynamic>;
+    final isForMate = data['isForMate'] as bool;
+    final String deemId = deem.id;
+    Map<String, dynamic>? userData;
+
+    if (isForMate && !(data['mates'] as List<dynamic>).contains(currentUserEmail)) {
+      return const SizedBox.shrink(); // Eğer kullanıcı arkadaş değilse, gösterme
+    }
+
+    // Gönderinin genişletilip genişletilmediğini kontrol et
+    final bool isExpanded = expandedPosts[deemId] ?? false;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            expandedPosts[deemId] = !isExpanded; // Gönderiyi genişlet/küçült
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Gönderi başlığı ve yazar bilgisi
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 25,
+                    child: SvgPicture.network(
+                      data['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
+                      placeholderBuilder: (context) => const CircularProgressIndicator(),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['authorUsername'] ?? "Unknown",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        data['author'] ?? "",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Icon(
+                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    size: 24,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Başlık ve açıklama
+              Text(
+                data['title'] ?? "No Title",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                data['description'] ?? "No Description",
+                style: const TextStyle(fontSize: 16),
+              ),
+              if (isExpanded) ...[
+                const SizedBox(height: 10),
+                // Seçenekler ve oy sayıları
+                ...options.entries.map((entry) {
+                  final optionKey = entry.key;
+                  final optionData = entry.value as Map<String, dynamic>;
+                  final isSelected = userChoices[deem.id] == optionKey;
+
+                  return ListTile(
+                    title: Text(optionData['text']),
+                    trailing: Text("${optionData['chosen']} votes"),
+                    onTap: () => _chooseOption(deem.id, optionKey, optionData['text']),
+                    tileColor: isSelected ? Colors.blue.shade100 : null,
+                  );
+                }).toList(),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+
+  Widget buildDeemsList() {
+    if (userDeems.isEmpty) {
+      return const Center(child: Text("No deems yet."));
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: userDeems.length,
+      itemBuilder: (context, index) {
+        final deem = userDeems[index];
+        return _buildPostCard(deem);
+      },
+    );
+  }
+
 
   Widget _buildStatCard(String label, String value) {
     return Column(

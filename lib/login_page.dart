@@ -46,8 +46,16 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      if (e.code == 'user-not-found') {
+        errorMessage = 'Bu e-posta adresine ait bir kullanıcı bulunamadı.';
+      } else if (e.code == 'wrong-password') {
+        errorMessage = 'Hatalı şifre. Lütfen tekrar deneyin.';
+      } else {
+        errorMessage = 'Bir hata oluştu. Lütfen tekrar deneyin.';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.message}")),
+        SnackBar(content: Text(errorMessage)),
       );
     }
   }
