@@ -3,6 +3,7 @@ import 'package:de_mate/mate_profile_page.dart';
 import 'package:de_mate/services/user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'notification_page.dart';
 import 'search_page.dart';
 import 'profile_page.dart';
@@ -243,6 +244,7 @@ class _HomePageState extends State<HomePage> {
                           'longitude': position.longitude,
                         },
                         'isForMate': false,
+                        'authorProfilePage': (await firestore.collection('users').doc(currentUserEmail).get()).data()?['profilePicture'] ?? "Unknown"
                       });
 
                       UserRepository userControl = new UserRepository();
@@ -305,8 +307,12 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: NetworkImage("https://via.placeholder.com/150"),
-                    radius: 25,
+                      radius: 25,
+                      child: SvgPicture.network(
+                      data['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
+                      placeholderBuilder: (context) => const CircularProgressIndicator(),
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Column(
