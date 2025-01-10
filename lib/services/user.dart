@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class UserRepository {
   final CollectionReference _usersCollection =
@@ -259,5 +262,31 @@ class UserRepository {
     } catch (e) {
       print("Error removing friend: $e");
     }
+  }
+  // Save FCM token to Firestore
+  Future<void> saveFCMToken(String email) async {
+    try {
+      final String? fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await _usersCollection.doc(email).update({
+          'fcmToken': fcmToken,
+        });
+        print("FCM Token saved successfully.");
+      }
+    } catch (e) {
+      print("Error saving FCM token: $e");
+    }
+  }
+
+  // Handle FCM token refresh
+  void handleTokenRefresh(String email) {
+    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+      try {
+        await _usersCollection.doc(email).update({'fcmToken': newToken});
+        print("FCM Token refreshed and saved.");
+      } catch (e) {
+        print("Error updating FCM token: $e");
+      }
+    });
   }
 }
