@@ -34,8 +34,24 @@ class _HomePageState extends State<HomePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final String currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? "";
   Map<String, String> userChoices = {}; // Kullanıcının yaptığı seçimler
-  Map<String, bool> expandedPosts = {}; // Her gönderi için genişleme durumu
+  Set<String> expandedPosts = {}; // Genişletilen gönderilerin kaydı
+  Map<String, dynamic>? currentUserData; // Kullanıcı bilgileri için önbellek
   bool isLoading = false; // Paylaşım işlemi sırasında butonu devre dışı bırakmak için
+
+  @override
+  void initState() {
+    super.initState();
+    cacheCurrentUser();
+  }
+
+  Future<void> cacheCurrentUser() async {
+    final userDoc = await firestore.collection('users').doc(currentUserEmail).get();
+    if (userDoc.exists) {
+      setState(() {
+        currentUserData = userDoc.data();
+      });
+    }
+  }
 
   Future<int> _getNextDeemId() async {
     final counterRef = firestore.collection('counters').doc('deems');
@@ -58,6 +74,20 @@ class _HomePageState extends State<HomePage> {
     });
 
     return nextId;
+  }
+
+  void togglePost(String postId) {
+    setState(() {
+      if (expandedPosts.contains(postId)) {
+        expandedPosts.remove(postId);
+      } else {
+        expandedPosts.add(postId);
+      }
+    });
+  }
+
+  bool isPostExpanded(String postId) {
+    return expandedPosts.contains(postId);
   }
 
   Future<void> _chooseOption(String docId, String optionKey, String optionText) async {
@@ -97,51 +127,21 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         userChoices[docId] = optionKey;
-        expandedPosts[docId] = true; // Gönderi genişlemiş olarak kalmaya devam eder
       });
 
-      final currentContext = context;
-      ScaffoldMessenger.of(currentContext).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("$optionText seçildi!")),
       );
     } catch (e) {
       print("Error updating choice: $e");
-      final currentContext = context;
-      ScaffoldMessenger.of(currentContext).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Seçim kaydedilirken bir hata oluştu.")),
       );
     }
   }
 
-  void _navigateToPage(int index) {
-    if (index == 0 && cp.getCurrentPage() != 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
-      cp.setCurrentPage(0);
-    } else if (index == 1 && cp.getCurrentPage() != 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const SearchPage()),
-      );
-      cp.setCurrentPage(1);
-    } else if (index == 2 && cp.getCurrentPage() != 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const NotificationPage()),
-      );
-      cp.setCurrentPage(2);
-    } else if (index == 3 && cp.getCurrentPage() != 3) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
-      );
-      cp.setCurrentPage(3);
-    }
-  }
-
   Future<void> _createPost() async {
+    final _formKey = GlobalKey<FormState>();
     TextEditingController titleController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
     List<TextEditingController> optionControllers = [
@@ -152,123 +152,101 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text("Create a New Post"),
-              content: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      decoration: const InputDecoration(labelText: 'Title'),
-                    ),
-                    TextField(
-                      controller: descriptionController,
-                      decoration: const InputDecoration(labelText: 'Description'),
-                    ),
-                    ...optionControllers.asMap().entries.map((entry) {
-                      int index = entry.key;
-                      TextEditingController controller = entry.value;
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: controller,
-                              decoration: InputDecoration(labelText: 'Option ${index + 1}'),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle),
-                            onPressed: optionControllers.length > 2
-                                ? () => setState(() {
-                              optionControllers.removeAt(index);
-                            })
-                                : null,
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                    TextButton.icon(
-                      onPressed: () => setState(() {
-                        optionControllers.add(TextEditingController());
-                      }),
-                      icon: const Icon(Icons.add),
-                      label: const Text("Add Option"),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                    setState(() {
-                      isLoading = true;
-                    });
-                    if (titleController.text.isEmpty ||
-                        descriptionController.text.isEmpty ||
-                        optionControllers.any((controller) => controller.text.isEmpty)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please fill in all fields")),
-                      );
+        return AlertDialog(
+          title: const Text("Create a New Post"),
+          content: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    validator: (value) => value!.isEmpty ? "Title cannot be empty" : null,
+                  ),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    validator: (value) => value!.isEmpty ? "Description cannot be empty" : null,
+                  ),
+                  ...optionControllers.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    return TextFormField(
+                      controller: entry.value,
+                      decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                      validator: (value) => value!.isEmpty ? "Option cannot be empty" : null,
+                    );
+                  }).toList(),
+                  TextButton(
+                    onPressed: () {
                       setState(() {
-                        isLoading = false;
+                        optionControllers.add(TextEditingController());
                       });
-                      return;
-                    }
+                    },
+                    child: const Text("Add Option"),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                if (!_formKey.currentState!.validate()) return;
+                setState(() {
+                  isLoading = true;
+                });
 
-                    Map<String, dynamic> options = {};
-                    for (int i = 0; i < optionControllers.length; i++) {
-                      options['option${i + 1}'] = {'chosen': 0, 'text': optionControllers[i].text};
-                    }
+                Map<String, dynamic> options = {};
+                for (int i = 0; i < optionControllers.length; i++) {
+                  options['option${i + 1}'] = {'chosen': 0, 'text': optionControllers[i].text};
+                }
 
-                    try {
-                      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-                      int deemId = await _getNextDeemId();
-                      String docId = "d_$deemId";
-                      await firestore.collection('deems').doc(docId).set({
-                        'title': titleController.text,
-                        'description': descriptionController.text,
-                        'options': options,
-                        'author': currentUserEmail,
-                        'authorUsername': (await firestore.collection('users').doc(currentUserEmail).get()).data()?['username'] ?? "Unknown",
-                        'publishedTime': FieldValue.serverTimestamp(),
-                        'location': {
-                          'latitude': position.latitude,
-                          'longitude': position.longitude,
-                        },
-                        'isForMate': false,
-                        'authorProfilePage': (await firestore.collection('users').doc(currentUserEmail).get()).data()?['profilePicture'] ?? "Unknown"
-                      });
+                try {
+                  Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+                  int deemId = await _getNextDeemId();
+                  String docId = "d_$deemId";
+                  await firestore.collection('deems').doc(docId).set({
+                    'authorProfilePage': currentUserData?['profilePicture'] ?? "https://via.placeholder.com/150",
+                    'title': titleController.text,
+                    'description': descriptionController.text,
+                    'options': options,
+                    'author': currentUserEmail,
+                    'authorUsername': currentUserData?['username'] ?? "Unknown",
+                    'publishedTime': FieldValue.serverTimestamp(),
+                    'location': {
+                      'latitude': position.latitude,
+                      'longitude': position.longitude,
+                    },
+                    'isForMate': false,
+                  });
 
-                      UserRepository userControl = new UserRepository();
-                      userControl.addDeemToUser(currentUserEmail, "d_$deemId");
+                  UserRepository userControl = UserRepository();
+                  userControl.addDeemToUser(currentUserEmail, "d_$deemId");
 
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Post created successfully!")),
-                      );
-                    } catch (e) {
-                      print("Error creating post: $e");
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Failed to create post: $e")),
-                      );
-                    }
-                    setState(() {
-                      isLoading = false;
-                    });
-                  },
-                  child: const Text("Post"),
-                ),
-              ],
-            );
-          },
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Post created successfully!")),
+                  );
+                } catch (e) {
+                  print("Error creating post: $e");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Failed to create post: $e")),
+                  );
+                }
+                setState(() {
+                  isLoading = false;
+                });
+              },
+              child: const Text("Post"),
+            ),
+          ],
         );
       },
     );
@@ -279,13 +257,12 @@ class _HomePageState extends State<HomePage> {
     final options = data['options'] as Map<String, dynamic>;
     final isForMate = data['isForMate'] as bool;
     final String deemId = deem.id;
-    Map<String, dynamic>? userData;
 
     if (isForMate && !(data['mates'] as List<dynamic>).contains(currentUserEmail)) {
-      return const SizedBox.shrink(); // Eğer kullanıcı arkadaş değilse, gösterme
+      return const SizedBox.shrink();
     }
 
-    final bool isExpanded = expandedPosts[deemId] ?? false;
+    final bool isExpanded = isPostExpanded(deemId);
 
     return Card(
       shape: RoundedRectangleBorder(
@@ -294,11 +271,7 @@ class _HomePageState extends State<HomePage> {
       elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: InkWell(
-        onTap: () {
-          setState(() {
-            expandedPosts[deemId] = !isExpanded;
-          });
-        },
+        onTap: () => togglePost(deemId),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
@@ -307,12 +280,10 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   CircleAvatar(
-                      radius: 25,
-                      child: SvgPicture.network(
-                      data['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
-                      placeholderBuilder: (context) => const CircularProgressIndicator(),
-                      fit: BoxFit.contain,
+                    backgroundImage: NetworkImage(
+                      data['authorProfilePage'] ?? "https://via.placeholder.com/150",
                     ),
+                    radius: 25,
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -379,76 +350,104 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text("Home Feed")),
-        body: StreamBuilder<QuerySnapshot>(
-          stream: firestore
-              .collection('deems')
-              .orderBy('publishedTime', descending: true)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      appBar: AppBar(title: const Text("Home Feed")),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: firestore
+            .collection('deems')
+            .orderBy('publishedTime', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            final deems = snapshot.data!.docs;
+          final deems = snapshot.data!.docs;
 
-            return ListView.builder(
-              itemCount: deems.length,
-              itemBuilder: (context, index) {
-                final deem = deems[index];
-                return _buildPostCard(deem);
-              },
-            );
-          },
-        ),
-        bottomNavigationBar: BottomAppBar(
+          return ListView.builder(
+            itemCount: deems.length,
+            itemBuilder: (context, index) {
+              final deem = deems[index];
+              return _buildPostCard(deem);
+            },
+          );
+        },
+      ),
+      bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
-    notchMargin: 6.0,
-    child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceAround,
-    children: [
-    IconButton(
-    icon: Icon(
-    Icons.home,
-    size: 35,
-    color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
-    ),
-    onPressed: () => _navigateToPage(0),
-    ),
-    IconButton(
-    icon: Icon(
-    Icons.search,
-    size: 35,
-    color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
-    ),
-    onPressed: () => _navigateToPage(1),
-    ),
-    const SizedBox(width: 40), // FAB için boşluk
-    IconButton(
-    icon: Icon(
-    Icons.notifications,
-    size: 30,
-    color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
-    ),
-    onPressed: () => _navigateToPage(2),
-    ),
-    IconButton(
-    icon: Icon(
-    Icons.person,
-    size: 35,
-    color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
-    ),
-    onPressed: () => _navigateToPage(3),
-    ),
-    ],
-    ),
-    ),
-    floatingActionButton: FloatingActionButton(
-    backgroundColor: Colors.blue[300],
-    onPressed: _createPost,
-    child: const Icon(Icons.add, color: Colors.black),
-    ),
-    floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        notchMargin: 6.0,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.home,
+                size: 35,
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
+              ),
+              onPressed: () => _navigateToPage(0),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.search,
+                size: 35,
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
+              ),
+              onPressed: () => _navigateToPage(1),
+            ),
+            const SizedBox(width: 40), // FAB için boşluk
+            IconButton(
+              icon: Icon(
+                Icons.notifications,
+                size: 30,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
+              ),
+              onPressed: () => _navigateToPage(2),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.person,
+                size: 35,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
+              ),
+              onPressed: () => _navigateToPage(3),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blue[300],
+        onPressed: _createPost,
+        child: const Icon(Icons.add, color: Colors.black),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
+  void _navigateToPage(int index) {
+    if (index == 0 && cp.getCurrentPage() != 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+      cp.setCurrentPage(0);
+    } else if (index == 1 && cp.getCurrentPage() != 1) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SearchPage()),
+      );
+      cp.setCurrentPage(1);
+    } else if (index == 2 && cp.getCurrentPage() != 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const NotificationPage()),
+      );
+      cp.setCurrentPage(2);
+    } else if (index == 3 && cp.getCurrentPage() != 3) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ProfilePage()),
+      );
+      cp.setCurrentPage(3);
+    }
+  }
+
 }
