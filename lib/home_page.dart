@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:de_mate/mate_profile_page.dart';
+import 'package:de_mate/services/user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'notification_page.dart';
@@ -243,6 +245,9 @@ class _HomePageState extends State<HomePage> {
                         'isForMate': false,
                       });
 
+                      UserRepository userControl = new UserRepository();
+                      userControl.addDeemToUser(currentUserEmail, "d_$deemId");
+
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Post created successfully!")),
@@ -272,6 +277,7 @@ class _HomePageState extends State<HomePage> {
     final options = data['options'] as Map<String, dynamic>;
     final isForMate = data['isForMate'] as bool;
     final String deemId = deem.id;
+    Map<String, dynamic>? userData;
 
     if (isForMate && !(data['mates'] as List<dynamic>).contains(currentUserEmail)) {
       return const SizedBox.shrink(); // Eğer kullanıcı arkadaş değilse, gösterme
@@ -299,7 +305,7 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: NetworkImage(data['profilePicture'] ?? "https://via.placeholder.com/150"),
+                    backgroundImage: NetworkImage("https://via.placeholder.com/150"),
                     radius: 25,
                   ),
                   const SizedBox(width: 10),

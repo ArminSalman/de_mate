@@ -91,6 +91,8 @@ class _RegisterPageState extends State<RegisterPage> {
           );
 
           userControl.addUserToFirestore(_usernameController.text, _emailController.text, _nameController.text, _surnameController.text, _birthdateController, _firestore);
+          userControl.saveFCMToken(_emailController.text);
+          userControl.handleTokenRefresh(_emailController.text);
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Registration successful")),
