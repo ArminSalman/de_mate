@@ -8,6 +8,28 @@ import 'search_page.dart';
 import 'profile_page.dart';
 import 'services/user.dart';
 
+// Background message handler
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print('Background message received: ${message.notification?.title}');
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  var androidDetails = const AndroidNotificationDetails(
+    'channel_id',
+    'channel_name',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
+
+  var notificationDetails = NotificationDetails(android: androidDetails);
+
+  await flutterLocalNotificationsPlugin.show(
+    0,
+    message.notification?.title,
+    message.notification?.body,
+    notificationDetails,
+  );
+}
+
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
 
@@ -28,7 +50,7 @@ class _NotificationPageState extends State<NotificationPage> {
   void initState() {
     super.initState();
     _initializeFCM();
-    _setupRealTimeNotifications();
+    _setupRealTimeNotifications(); // Initialize real-time notifications
     _initializeLocalNotifications();
     _getToken();
   }
@@ -46,29 +68,25 @@ class _NotificationPageState extends State<NotificationPage> {
       print('User declined or did not accept notification permissions.');
     }
 
+    String? token = await _firebaseMessaging.getToken();
+    print("FCM Token: $token");
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Foreground notification received: ${message.notification?.title}');
       _showLocalNotification(message);
-      _fetchNotifications();
+      _fetchNotifications(); // Fetch notifications when a new message is received
     });
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
-  Future<void> _initializeLocalNotifications() async {
-    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('app_icon');
+  void _initializeLocalNotifications() {
+    const AndroidInitializationSettings androidInitSettings =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
     const InitializationSettings initSettings = InitializationSettings(
-      android: androidInit,
-    );
+        android: androidInitSettings);
 
-    await flutterLocalNotificationsPlugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        if (response.payload != null) {
-          print('Notification clicked with payload: ${response.payload}');
-        }
-      },
-    );
+    flutterLocalNotificationsPlugin.initialize(initSettings);
   }
 
   Future<void> _getToken() async {
@@ -77,7 +95,10 @@ class _NotificationPageState extends State<NotificationPage> {
       print('FCM Token: $token');
 
       if (token != null) {
-        FirebaseFirestore.instance.collection('users').doc(_currentUserEmail).update({
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(_currentUserEmail)
+            .update({
           'fcmToken': token,
         });
       }
@@ -86,29 +107,43 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
-  void _setupRealTimeNotifications() {
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(_currentUserEmail)
-        .snapshots()
-        .listen((DocumentSnapshot snapshot) {
-      if (snapshot.exists) {
-        final data = snapshot.data() as Map<String, dynamic>;
-        final receivedMateRequests = data['receivedMateRequests'] as List<dynamic>? ?? [];
-        _updateNotifications(receivedMateRequests);
+  // Fetch username for the sender email
+  Future<String> _getUsernameFromEmail(String email) async {
+    try {
+      DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(email)
+          .get();
+
+      if (userSnapshot.exists) {
+        final data = userSnapshot.data() as Map<String, dynamic>;
+        return data['username'] ?? 'Unknown User'; // Replace with 'username' field from Firestore
       }
-    });
+      return 'Unknown User';
+    } catch (e) {
+      print("Error fetching username: $e");
+      return 'Unknown User';
+    }
   }
 
+  // Fetch and update notifications
   void _updateNotifications(List<dynamic> receivedMateRequests) async {
     final nearbyDeems = await _getNearbyDeems();
 
+    // For each mate request, fetch the sender's username
+    List<Map<String, dynamic>> updatedNotifications = [];
+    for (var email in receivedMateRequests) {
+      String username = await _getUsernameFromEmail(email);
+      updatedNotifications.add({
+        'type': 'Mate Request',
+        'username': username, // Store the username
+        'email': email,
+      });
+    }
+
     setState(() {
       _notifications = [
-        ...receivedMateRequests.map((email) => {
-          'type': 'Mate Request',
-          'email': email,
-        }),
+        ...updatedNotifications,
         ...nearbyDeems.map((deem) => {
           'type': 'New Deem',
           'deem': deem,
@@ -133,6 +168,23 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
+  // Setup real-time notification listener
+  void _setupRealTimeNotifications() {
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(_currentUserEmail)
+        .snapshots()
+        .listen((DocumentSnapshot snapshot) {
+      if (snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        final receivedMateRequests =
+            data['receivedMateRequests'] as List<dynamic>? ?? [];
+        _updateNotifications(receivedMateRequests);
+      }
+    });
+  }
+
+  // Fetch notifications
   Future<void> _fetchNotifications() async {
     try {
       DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
@@ -142,7 +194,8 @@ class _NotificationPageState extends State<NotificationPage> {
 
       if (userSnapshot.exists) {
         final data = userSnapshot.data() as Map<String, dynamic>;
-        final receivedMateRequests = data['receivedMateRequests'] as List<dynamic>? ?? [];
+        final receivedMateRequests =
+            data['receivedMateRequests'] as List<dynamic>? ?? [];
         final nearbyDeems = await _getNearbyDeems();
 
         setState(() {
@@ -163,18 +216,22 @@ class _NotificationPageState extends State<NotificationPage> {
     }
   }
 
+  // Handle the acceptance of mate request
   void _handleMateRequest(String senderEmail) async {
+    String senderUsername = await _getUsernameFromEmail(senderEmail);
+
     await _userController.acceptMateRequest(senderEmail, _currentUserEmail);
     _showSnackBar("Mate request accepted!");
 
+    // Add notification with sender's username
     FirebaseFirestore.instance.collection('notifications').add({
       'recipient': senderEmail,
       'title': "Mate Request Accepted",
-      'body': "Your mate request was accepted by $_currentUserEmail.",
+      'body': "Your mate request was accepted by $senderUsername.",
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    _fetchNotifications();
+    _fetchNotifications(); // Fetch updated notifications
   }
 
   void _showSnackBar(String message) {
@@ -197,6 +254,21 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
+  // Reject mate request and update notifications
+  void _handleRejectMateRequest(String senderEmail) async {
+    await _userController.rejectMateRequest(senderEmail, _currentUserEmail);
+    _showSnackBar("Mate request rejected!");
+
+    FirebaseFirestore.instance.collection('notifications').add({
+      'recipient': senderEmail,
+      'title': "Mate Request Rejected",
+      'body': "$_currentUserEmail rejected your mate request.",
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    _fetchNotifications(); // Fetch updated notifications
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -212,15 +284,28 @@ class _NotificationPageState extends State<NotificationPage> {
           if (notification['type'] == 'Mate Request') {
             return ListTile(
               title: Text(
-                "Mate request from ${notification['email']}",
+                "Mate request from ${notification['username']}", // Use username here
                 style: const TextStyle(color: Colors.black),
               ),
-              trailing: ElevatedButton(
-                onPressed: () => _handleMateRequest(notification['email']),
-                child: const Text(
-                  "Accept",
-                  style: TextStyle(color: Colors.blue),
-                ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _handleMateRequest(notification['email']),
+                    child: const Text(
+                      "Accept",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () => _handleRejectMateRequest(notification['email']),
+                    child: const Text(
+                      "Reject",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
               ),
             );
           } else if (notification['type'] == 'New Deem') {
@@ -305,26 +390,4 @@ class _NotificationPageState extends State<NotificationPage> {
       ),
     );
   }
-}
-
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Background message received: ${message.notification?.title}');
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-  FlutterLocalNotificationsPlugin();
-
-  var androidDetails = const AndroidNotificationDetails(
-    'channel_id',
-    'channel_name',
-    importance: Importance.max,
-    priority: Priority.high,
-  );
-
-  var notificationDetails = NotificationDetails(android: androidDetails);
-
-  await flutterLocalNotificationsPlugin.show(
-    0,
-    message.notification?.title,
-    message.notification?.body,
-    notificationDetails,
-  );
 }

@@ -14,15 +14,18 @@
     <application
         android:label="DeMate"
         android:name="${applicationName}"
+        android:exported="true"
         android:icon="@mipmap/ic_launcher"
         tools:replace="android:icon">
 
         <!-- Firebase Messaging Service -->
         <service
-            android:name="com.google.firebase.messaging.FirebaseMessagingService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="true"
-            tools:replace="android:exported" />
+            android:name=".java.MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <!-- Main Activity -->
         <activity
