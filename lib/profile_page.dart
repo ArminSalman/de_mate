@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'display_mates_page.dart';
+import 'display_deems_page.dart'; // Deems sayfası için ekledik
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -18,15 +19,14 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth auth = FirebaseAuth.instance;
-  Map<String, dynamic>? userData; // Store user data
+  Map<String, dynamic>? userData;
 
-  // Fetch user data based on username (email in this case)
   Future<void> fetchUserData(String email) async {
     final doc = await firestore.collection('users').doc(email).get();
 
     if (doc.exists) {
       setState(() {
-        userData = doc.data(); // Update state with fetched data
+        userData = doc.data();
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -41,20 +41,17 @@ class _ProfilePageState extends State<ProfilePage> {
     final user = auth.currentUser;
 
     if (user != null) {
-      fetchUserData(user.email ?? ""); // Fetch data using email
+      fetchUserData(user.email ?? "");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       appBar: AppBar(
         centerTitle: true,
         title: const Text('DeMate'),
-
         actions: <Widget>[
-
           IconButton(
             icon: const Icon(Icons.menu),
             color: Colors.black,
@@ -68,8 +65,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -77,31 +72,30 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             const SizedBox(height: 100),
-            // Profile Image with a shadow effect
             Stack(
               children: [
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey.shade300,
                   child: SvgPicture.network(
-                    userData?['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
-                    placeholderBuilder: (context) => const CircularProgressIndicator(),
+                    userData?['profilePicture'] ??
+                        "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
+                    placeholderBuilder: (context) =>
+                    const CircularProgressIndicator(),
                     fit: BoxFit.contain,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            // Display username
             Text(
-              userData?['username'] ?? "Loading", // Show username
+              userData?['username'] ?? "Loading",
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 26,
               ),
             ),
             const SizedBox(height: 10),
-            // Placeholder status
             const Text(
               "Status should be here",
               style: TextStyle(
@@ -111,7 +105,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const SizedBox(height: 30),
-            // Profile stats
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -134,7 +127,8 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icon(
                 Icons.home,
                 size: 35,
-                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,),
+                color: cp.getCurrentPage() == 0 ? Colors.blue : Colors.black,
+              ),
               onPressed: () {
                 if (cp.getCurrentPage() != 0) {
                   Navigator.pushReplacement(
@@ -148,9 +142,11 @@ class _ProfilePageState extends State<ProfilePage> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.search,
+              icon: Icon(
+                Icons.search,
                 size: 35,
-                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,),
+                color: cp.getCurrentPage() == 1 ? Colors.blue : Colors.black,
+              ),
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
@@ -162,9 +158,11 @@ class _ProfilePageState extends State<ProfilePage> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.notifications,
-                  size: 30,
-                  color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black),
+              icon: Icon(
+                Icons.notifications,
+                size: 30,
+                color: cp.getCurrentPage() == 2 ? Colors.blue : Colors.black,
+              ),
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
@@ -177,9 +175,10 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             IconButton(
               icon: Icon(
-                  Icons.person,
-                  size: 35,
-                  color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black),
+                Icons.person,
+                size: 35,
+                color: cp.getCurrentPage() == 3 ? Colors.blue : Colors.black,
+              ),
               onPressed: () {
                 if (cp.getCurrentPage() != 3) {
                   Navigator.pushReplacement(
@@ -199,17 +198,21 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Helper method to build a stat card (e.g., Posts, Followers)
-  // Helper method to build a stat card (e.g., Mates, Sups, Deems)
   Widget _buildStatCard(String label, String value) {
     return GestureDetector(
       onTap: () {
         if (label == "Mates") {
-          // Navigate to the MatesPage when "Mates" is tapped
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const DisplayMatesPage(), // Replace MatesPage with your actual mates list widget
+              builder: (context) => const DisplayMatesPage(),
+            ),
+          );
+        } else if (label == "Deems") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DisplayDeemsPage(),
             ),
           );
         }
