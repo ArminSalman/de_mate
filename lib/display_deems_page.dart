@@ -63,7 +63,7 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$optionText seçildi!")));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Seçim yapılamadı: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Choose couldn't be done: $e")));
     }
   }
 
@@ -77,9 +77,9 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
         userChoices.remove(deemId);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Deem başarıyla silindi.")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Deem deleted successfully.")));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Silme işlemi başarısız: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Delete operation couldn't be success: $e")));
     }
   }
 
@@ -130,7 +130,7 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        userData['authorUsername'] ?? "Unknown",
+                        userData['username'] ?? "Unknown",
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       Text(
