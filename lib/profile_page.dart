@@ -110,7 +110,7 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildStatCard("Mates", userData?["mates"]?.length.toString() ?? "0"),
                 _buildStatCard("Sups", "0"),
-                _buildStatCard("Deems", "0"),
+                _buildStatCard("Deems", userData?['deems']?.length.toString() ?? "0"),
               ],
             ),
             const SizedBox(height: 30),
