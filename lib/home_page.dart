@@ -213,7 +213,6 @@ class _HomePageState extends State<HomePage> {
                   int deemId = await _getNextDeemId();
                   String docId = "d_$deemId";
                   await firestore.collection('deems').doc(docId).set({
-                    'authorProfilePage': currentUserData?['profilePicture'] ?? "https://via.placeholder.com/150",
                     'title': titleController.text,
                     'description': descriptionController.text,
                     'options': options,
@@ -252,18 +251,30 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildPostCard(DocumentSnapshot deem) {
+  Future<Widget> _buildPostCard(DocumentSnapshot deem) async {
     final data = deem.data() as Map<String, dynamic>;
     final options = data['options'] as Map<String, dynamic>;
     final isForMate = data['isForMate'] as bool;
     final String deemId = deem.id;
+    var userData;
 
+    UserRepository userControl = UserRepository();
+    var userSnapshot = await userControl.getUserByEmail(data["author"]);
+
+    if (userSnapshot != null && userSnapshot.exists) {
+      userData = userSnapshot.data() as Map<String, dynamic>;
+    } else {
+      userData = {'profilePicture': "default_image_url", 'authorUsername': "Unknown"};
+    }
+
+    // If the post is for mates and the current user is not a mate, return an empty widget
     if (isForMate && !(data['mates'] as List<dynamic>).contains(currentUserEmail)) {
-      return const SizedBox.shrink();
+      return const SizedBox.shrink(); // Return an empty widget when post is for mates and user is not one
     }
 
     final bool isExpanded = isPostExpanded(deemId);
 
+    // Always return a widget
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15.0),
@@ -280,17 +291,19 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: NetworkImage(
-                      data['authorProfilePage'] ?? "https://via.placeholder.com/150",
-                    ),
                     radius: 25,
+                    child: SvgPicture.network(
+                      userData['profilePicture'] ?? "https://api.dicebear.com/9.x/lorelei/svg?seed=Andrea&flip=true",
+                      placeholderBuilder: (context) => const CircularProgressIndicator(),
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        data['authorUsername'] ?? "Unknown",
+                        userData['username'] ?? "Unknown",
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -360,14 +373,24 @@ class _HomePageState extends State<HomePage> {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-
           final deems = snapshot.data!.docs;
 
           return ListView.builder(
             itemCount: deems.length,
             itemBuilder: (context, index) {
-              final deem = deems[index];
-              return _buildPostCard(deem);
+              return FutureBuilder<Widget>(
+                future: _buildPostCard(deems[index]),
+                builder: (context, cardSnapshot) {
+                  if (cardSnapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (cardSnapshot.hasError) {
+                    return Center(child: Text("Error: ${cardSnapshot.error}"));
+                  } else if (!cardSnapshot.hasData) {
+                    return const SizedBox.shrink(); // Ensure we don't return null
+                  }
+                  return cardSnapshot.data!;
+                },
+              );
             },
           );
         },
@@ -422,6 +445,7 @@ class _HomePageState extends State<HomePage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
+
   void _navigateToPage(int index) {
     if (index == 0 && cp.getCurrentPage() != 0) {
       Navigator.pushReplacement(

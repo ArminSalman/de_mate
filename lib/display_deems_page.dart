@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:de_mate/mate_profile_page.dart';
 import 'package:de_mate/services/user.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -92,16 +91,15 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
     var userData;
 
     UserRepository userControl = UserRepository();
-    // Kullanıcıyı email ile al
     var userSnapshot = await userControl.getUserByEmail(data["author"]);
 
     if (userSnapshot != null && userSnapshot.exists) {
-      // Verilere erişim sağlanabilir
       userData = userSnapshot.data() as Map<String, dynamic>;
     } else {
       userData = {'profilePicture': "default_image_url", 'authorUsername': "Unknown"};
     }
 
+    // Always return a valid widget, even if data is missing
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       elevation: 3,
@@ -167,7 +165,7 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
 
                   return ListTile(
                     title: Text(optionData['text']),
-                    trailing: Text("${optionData['chosen']} oy"),
+                    trailing: Text("${optionData['chosen']} vote"),
                     onTap: () => _chooseOption(deemId, optionKey, optionData['text']),
                     tileColor: isSelected ? Colors.blue.shade100 : null,
                   );
@@ -184,21 +182,21 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
                     context: context,
                     builder: (context) {
                       return AlertDialog(
-                        title: const Text("Deemi Sil"),
-                        content: const Text("Bu deem'i silmek istediğinizden emin misiniz?"),
+                        title: const Text("Delete Deem"),
+                        content: const Text("Are you sure about deleting this deem?"),
                         actions: [
                           TextButton(
                             onPressed: () {
                               Navigator.pop(context);
                             },
-                            child: const Text("İptal"),
+                            child: const Text("Cancel"),
                           ),
                           TextButton(
                             onPressed: () {
                               _deleteDeem(deemId);
                               Navigator.pop(context);
                             },
-                            child: const Text("Evet, Sil"),
+                            child: const Text("Yes, Delete"),
                           ),
                         ],
                       );
@@ -223,9 +221,9 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text("Hata: ${snapshot.error}"));
+            return Center(child: Text("Error:: ${snapshot.error}"));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Hiç Deem oluşturmadınız."));
+            return const Center(child: Text("You haven't posted a deem."));
           }
 
           final deems = snapshot.data!;
@@ -238,9 +236,9 @@ class _DisplayDeemsPageState extends State<DisplayDeemsPage> {
                   if (cardSnapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (cardSnapshot.hasError) {
-                    return Center(child: Text("Hata: ${cardSnapshot.error}"));
+                    return Center(child: Text("Error: ${cardSnapshot.error}"));
                   } else if (!cardSnapshot.hasData) {
-                    return const Center(child: Text("Card yüklenemedi"));
+                    return const Center(child: Text("Card hasn't downloaded"));
                   }
                   return cardSnapshot.data!;
                 },
